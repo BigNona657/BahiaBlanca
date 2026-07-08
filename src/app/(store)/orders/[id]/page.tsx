@@ -3,15 +3,17 @@ import { getClientOrderDetail } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
 
 type Props = {
-  params: { id: string };
-  searchParams: { new?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ new?: string }>;
 };
 
 const PAYMENT_LABEL = { CASH: "💵 Efectivo contra entrega", TRANSFER: "🏦 Transferencia bancaria" };
 
 export default async function OrderDetailPage({ params, searchParams }: Props) {
-  const orderId = parseInt(params.id);
-  const isNew = searchParams.new === "1";
+  const { id } = await params;
+  const { new: newParam } = await searchParams;
+  const orderId = parseInt(id);
+  const isNew = newParam === "1";
 
   const order = await getClientOrderDetail(orderId);
 
