@@ -1,0 +1,31 @@
+# Entorno — NUNCA subir al repo
+.env
+.env.local
+.env.development
+.env.production
+.env*.local
+
+# Next.js build
+.next/
+out/
+
+# PWA — generados en build, no trackear
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/worker-*.js
+public/worker-*.js.map
+
+# Dependencias
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel
