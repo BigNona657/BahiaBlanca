@@ -50,13 +50,21 @@ export default function ProductForm({ categories, initial }: Props) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
-      setForm((prev) => ({ ...prev, image_url: data.url }));
+
+      let data: { url?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Error del servidor (${res.status}). Revisá los logs de Vercel.`);
+      }
+
+      if (!res.ok) throw new Error(data.error ?? "Error al subir imagen.");
+      setForm((prev) => ({ ...prev, image_url: data.url! }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al subir imagen");
+      setError(err instanceof Error ? err.message : "Error al subir imagen.");
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
