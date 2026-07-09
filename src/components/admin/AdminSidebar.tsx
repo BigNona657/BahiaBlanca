@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 const links = [
-  { href: "/admin",          label: "Dashboard", icon: "📊" },
-  { href: "/admin/orders",   label: "Pedidos",   icon: "📦" },
-  { href: "/admin/products", label: "Productos", icon: "🍕" },
+  { href: "/admin",            label: "Dashboard",   icon: "📊" },
+  { href: "/admin/orders",     label: "Pedidos",     icon: "📦" },
+  { href: "/admin/products",   label: "Productos",   icon: "🍕" },
+  { href: "/admin/categories", label: "Categorías",  icon: "🏷️" },
+  { href: "/admin/settings",   label: "Configuración", icon: "⚙️" },
 ];
 
 export default function AdminSidebar() {

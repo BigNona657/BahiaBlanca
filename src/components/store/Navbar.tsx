@@ -5,19 +5,26 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 
-export default function Navbar() {
+type Props = {
+  businessName: string;
+  logoData: string;
+};
+
+export default function Navbar({ businessName, logoData }: Props) {
   const { data: session } = useSession();
   const { totalItems } = useCart();
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-brand-600">
-          BigNona
+        <Link href="/" className="flex items-center gap-2">
+          {logoData ? (
+            <Image src={logoData} alt={businessName} width={36} height={36} className="object-contain rounded-lg" />
+          ) : null}
+          <span className="text-xl font-bold text-brand-600">{businessName}</span>
         </Link>
 
         <nav className="flex items-center gap-3">
-          {/* Botón carrito con badge */}
           <Link href="/cart" className="relative p-2">
             <span className="text-2xl">🛒</span>
             {totalItems > 0 && (
@@ -30,19 +37,10 @@ export default function Navbar() {
           {session ? (
             <div className="flex items-center gap-3">
               {session.user.image && (
-                <Image
-                  src={session.user.image}
-                  alt="avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
+                <Image src={session.user.image} alt="avatar" width={32} height={32} className="rounded-full" />
               )}
               {session.user.role === "ADMIN" && (
-                <Link
-                  href="/admin"
-                  className="text-sm text-brand-600 font-medium hidden md:block"
-                >
+                <Link href="/admin" className="text-sm text-brand-600 font-medium hidden md:block">
                   Admin
                 </Link>
               )}
