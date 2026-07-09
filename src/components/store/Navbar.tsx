@@ -8,9 +8,10 @@ import { useCart } from "@/context/CartContext";
 type Props = {
   businessName: string;
   logoData: string;
+  logoSize?: number;
 };
 
-export default function Navbar({ businessName, logoData }: Props) {
+export default function Navbar({ businessName, logoData, logoSize = 36 }: Props) {
   const { data: session } = useSession();
   const { totalItems } = useCart();
 
@@ -19,7 +20,7 @@ export default function Navbar({ businessName, logoData }: Props) {
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           {logoData ? (
-            <Image src={logoData} alt={businessName} width={36} height={36} className="object-contain rounded-lg" />
+            <Image src={logoData} alt={businessName} width={logoSize} height={logoSize} className="object-contain rounded-full" style={{ width: logoSize, height: logoSize }} />
           ) : null}
           <span className="text-xl font-bold text-brand-600">{businessName}</span>
         </Link>

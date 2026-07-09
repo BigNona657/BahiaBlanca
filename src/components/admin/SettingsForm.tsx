@@ -48,9 +48,9 @@ export default function SettingsForm({ initial }: { initial: AppSettings }) {
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-gray-500">Logo del negocio</label>
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="w-20 h-20 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
             {form.logo_data ? (
-              <Image src={form.logo_data} alt="logo" width={80} height={80} className="object-contain" />
+              <Image src={form.logo_data} alt="logo" width={80} height={80} className="object-contain rounded-full" />
             ) : (
               <span className="text-3xl">🍽️</span>
             )}
@@ -75,6 +75,26 @@ export default function SettingsForm({ initial }: { initial: AppSettings }) {
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Tamaño del logo */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-gray-500">
+          Tamaño del logo — {form.logo_size}px
+        </label>
+        <input
+          type="range"
+          min={36}
+          max={46}
+          step={2}
+          value={form.logo_size}
+          onChange={(e) => setForm((p) => ({ ...p, logo_size: Number(e.target.value) }))}
+          className="w-full accent-brand-500"
+        />
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>36px</span>
+          <span>46px</span>
         </div>
       </div>
 

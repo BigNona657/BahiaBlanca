@@ -8,6 +8,7 @@ import { sql } from "@/lib/db/client";
 export type AppSettings = {
   business_name: string;
   logo_data: string;
+  logo_size: number;
 };
 
 export async function getAppSettings(): Promise<AppSettings> {
@@ -16,6 +17,7 @@ export async function getAppSettings(): Promise<AppSettings> {
   return {
     business_name: (map.business_name as string) ?? "BigNona",
     logo_data: (map.logo_data as string) ?? "",
+    logo_size: Number(map.logo_size ?? 36),
   };
 }
 
