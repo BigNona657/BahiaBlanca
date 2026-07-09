@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
 
 type Props = {
   product: Product | null;
   onClose: () => void;
   onAdd: (product: Product, quantity: number) => void;
+  isAuthenticated: boolean;
 };
 
-export default function ProductModal({ product, onClose, onAdd }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated }: Props) {
   const [qty, setQty] = useState(1);
+  const router = useRouter();
 
   // Resetear cantidad al abrir un producto nuevo
   useEffect(() => {
@@ -34,9 +37,14 @@ export default function ProductModal({ product, onClose, onAdd }: Props) {
 
   const handleAdd = useCallback(() => {
     if (!product) return;
+    if (!isAuthenticated) {
+      onClose();
+      router.push("/login?callbackUrl=%2F");
+      return;
+    }
     onAdd(product, qty);
     onClose();
-  }, [product, qty, onAdd, onClose]);
+  }, [product, qty, onAdd, onClose, isAuthenticated, router]);
 
   if (!product) return null;
 
@@ -56,8 +64,8 @@ export default function ProductModal({ product, onClose, onAdd }: Props) {
         style={{ maxHeight: "92dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Imagen: 1/3 de la pantalla ── */}
-        <div className="relative w-full shrink-0" style={{ height: "33dvh" }}>
+        {/* ── Imagen: 50dvh ── */}
+        <div className="relative w-full shrink-0" style={{ height: "50dvh" }}>
           {hasImage ? (
             <Image
               src={product.image_data || product.image_url!}
@@ -120,10 +128,16 @@ export default function ProductModal({ product, onClose, onAdd }: Props) {
                 onClick={handleAdd}
                 className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm flex items-center justify-between px-4 transition"
               >
-                <span>Agregar al carrito</span>
-                <span className="font-bold">
-                  ${total.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-                </span>
+                {isAuthenticated ? (
+                  <>
+                    <span>Agregar al carrito</span>
+                    <span className="font-bold">
+                      ${total.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="w-full text-center">Iniciá sesión para agregar</span>
+                )}
               </button>
             </div>
           </div>

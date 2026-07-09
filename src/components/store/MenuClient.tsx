@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
@@ -16,6 +17,7 @@ export default function MenuClient({ categories, products }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
+  const { data: session } = useSession();
 
   const filtered = useMemo(
     () =>
@@ -57,6 +59,7 @@ export default function MenuClient({ categories, products }: Props) {
         product={activeProduct}
         onClose={() => setActiveProduct(null)}
         onAdd={handleAddWithQty}
+        isAuthenticated={!!session}
       />
     </div>
   );

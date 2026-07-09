@@ -1,62 +1,21 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-
-  async function handleEmailLogin(e: React.FormEvent) {
-    e.preventDefault();
-    await signIn("email", { email, callbackUrl: "/" });
-    setSent(true);
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
         <h1 className="text-2xl font-bold text-center text-brand-600 mb-1">BigNona</h1>
         <p className="text-center text-gray-500 text-sm mb-8">Ingresá para hacer tu pedido</p>
 
-        {sent ? (
-          <p className="text-center text-green-600 font-medium">
-            ✉️ Revisá tu email, te enviamos un link de acceso.
-          </p>
-        ) : (
-          <>
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 text-sm font-medium hover:bg-gray-50 transition mb-6"
-            >
-              <GoogleIcon />
-              Continuar con Google
-            </button>
-
-            <div className="flex items-center gap-3 mb-6">
-              <hr className="flex-1 border-gray-200" />
-              <span className="text-xs text-gray-400">o con tu email</span>
-              <hr className="flex-1 border-gray-200" />
-            </div>
-
-            <form onSubmit={handleEmailLogin} className="space-y-4">
-              <input
-                type="email"
-                required
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-              />
-              <button
-                type="submit"
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white rounded-xl py-3 text-sm font-semibold transition"
-              >
-                Enviar Magic Link
-              </button>
-            </form>
-          </>
-        )}
+        <button
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 text-sm font-medium hover:bg-gray-50 transition"
+        >
+          <GoogleIcon />
+          Continuar con Google
+        </button>
       </div>
     </div>
   );
