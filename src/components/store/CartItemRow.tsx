@@ -18,9 +18,9 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove }: Prop
     <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0">
       {/* Imagen */}
       <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-        {product.image_url ? (
+        {(product.image_data || product.image_url) ? (
           <Image
-            src={product.image_url}
+            src={product.image_data || product.image_url!}
             alt={product.name}
             fill
             sizes="64px"
