@@ -3,20 +3,21 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
-    const { pathname } = req.nextUrl;
     const role = req.nextauth.token?.role;
-
-    if (pathname.startsWith("/admin") && role !== "ADMIN") {
+    if (req.nextUrl.pathname.startsWith("/admin") && role !== "ADMIN") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      // Con strategy:"database" el token JWT no existe en el Edge.
+      // Dejamos pasar siempre; la protección real está en los layouts/pages.
+      authorized: () => true,
     },
   }
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/orders/:path*", "/cart/checkout"],
+  // Solo interceptamos /admin — /orders se protege en el layout de servidor
+  matcher: ["/admin/:path*"],
 };

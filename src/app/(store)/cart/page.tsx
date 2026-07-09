@@ -43,8 +43,10 @@ export default function CartPage() {
     startTransition(async () => {
       const result = await createOrder(form, items);
       if (result.success) {
-        clearCart();
+        // Primero navegamos, luego limpiamos el carrito para evitar
+        // que el componente re-renderice con carrito vacío antes de salir
         router.push(`/orders/${result.orderId}?new=1`);
+        clearCart();
       } else {
         setError(result.error);
       }
