@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db/client";
-import { broadcast } from "@/lib/sse";
 import type { Product, Category } from "@/types/menu";
 
 export type OrderStatus =
@@ -40,17 +39,29 @@ export type ProductFormData = {
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
-export async function getAdminOrders(): Promise<AdminOrder[]> {
-  const rows = await sql`
-    SELECT
-      o.id, o.status, o.payment_method, o.delivery_address,
-      o.phone, o.total, o.created_at,
-      u.name  AS customer_name,
-      u.email AS customer_email
-    FROM orders o
-    JOIN users u ON u.id = o.user_id
-    ORDER BY o.created_at DESC
-  `;
+export async function getAdminOrders(activeOnly = false): Promise<AdminOrder[]> {
+  const rows = activeOnly
+    ? await sql`
+        SELECT
+          o.id, o.status, o.payment_method, o.delivery_address,
+          o.phone, o.total, o.created_at,
+          u.name  AS customer_name,
+          u.email AS customer_email
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        WHERE o.status NOT IN ('DELIVERED', 'CANCELLED')
+        ORDER BY o.created_at DESC
+      `
+    : await sql`
+        SELECT
+          o.id, o.status, o.payment_method, o.delivery_address,
+          o.phone, o.total, o.created_at,
+          u.name  AS customer_name,
+          u.email AS customer_email
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        ORDER BY o.created_at DESC
+      `;
   return rows as AdminOrder[];
 }
 
@@ -65,7 +76,6 @@ export async function updateOrderStatus(
     UPDATE orders SET status = ${status}, updated_at = NOW()
     WHERE id = ${orderId}
   `;
-  broadcast(orderId, status);
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   return { success: true };

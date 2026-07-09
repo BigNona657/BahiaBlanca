@@ -6,7 +6,7 @@ export const revalidate = 0; // siempre fresco en el panel admin
 const PAYMENT_LABEL = { CASH: "💵 Efectivo", TRANSFER: "🏦 Transferencia" };
 
 export default async function AdminDashboard() {
-  const [orders, stats] = await Promise.all([getAdminOrders(), getAdminStats()]);
+  const [orders, stats] = await Promise.all([getAdminOrders(true), getAdminStats()]);
 
   return (
     <div className="space-y-6">
@@ -24,14 +24,14 @@ export default async function AdminDashboard() {
       {/* ── Tabla de pedidos ── */}
       <div>
         <h2 className="text-lg font-bold text-gray-700 mb-3">
-          Pedidos recientes
+          Pedidos activos
           <span className="ml-2 text-sm font-normal text-gray-400">({orders.length})</span>
         </h2>
 
         {orders.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 text-center text-gray-400 shadow-sm">
-            <p className="text-4xl mb-2">📭</p>
-            <p className="text-sm">Todavía no hay pedidos.</p>
+            <p className="text-4xl mb-2">✅</p>
+            <p className="text-sm">No hay pedidos pendientes. ¡Todo al día!</p>
           </div>
         ) : (
           <div className="space-y-3">
