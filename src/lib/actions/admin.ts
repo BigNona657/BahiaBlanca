@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db/client";
+import { broadcast } from "@/lib/sse";
 import type { Product, Category } from "@/types/menu";
 
 export type OrderStatus =
@@ -19,6 +20,7 @@ export type AdminOrder = {
   status: OrderStatus;
   payment_method: "CASH" | "TRANSFER";
   delivery_address: string;
+  phone: string | null;
   total: string;
   created_at: string;
   customer_name: string | null;
@@ -42,7 +44,7 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
   const rows = await sql`
     SELECT
       o.id, o.status, o.payment_method, o.delivery_address,
-      o.total, o.created_at,
+      o.phone, o.total, o.created_at,
       u.name  AS customer_name,
       u.email AS customer_email
     FROM orders o
@@ -63,7 +65,9 @@ export async function updateOrderStatus(
     UPDATE orders SET status = ${status}, updated_at = NOW()
     WHERE id = ${orderId}
   `;
+  broadcast(orderId, status);
   revalidatePath("/admin");
+  revalidatePath("/admin/orders");
   return { success: true };
 }
 
@@ -187,6 +191,36 @@ export async function deleteProduct(
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo eliminar el producto." };
+  }
+}
+
+export async function updateProduct(
+  productId: number,
+  data: ProductFormData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await assertAdmin();
+
+    const price = parseFloat(data.price);
+    if (isNaN(price) || price <= 0) return { success: false, error: "Precio inválido." };
+
+    await sql`
+      UPDATE products SET
+        category_id  = ${parseInt(data.category_id)},
+        name         = ${data.name.trim()},
+        description  = ${data.description.trim() || null},
+        price        = ${price},
+        image_url    = ${data.image_url.trim() || null},
+        available    = ${data.available},
+        updated_at   = NOW()
+      WHERE id = ${productId}
+    `;
+
+    revalidatePath("/admin/products");
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo actualizar el producto." };
   }
 }
 

@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { createProduct, type ProductFormData } from "@/lib/actions/admin";
+import { createProduct, updateProduct, type ProductFormData } from "@/lib/actions/admin";
 import type { Category } from "@/types/menu";
+
+type Props = {
+  categories: Category[];
+  initial?: ProductFormData & { id?: number };
+};
 
 const EMPTY: ProductFormData = {
   name: "",
@@ -15,22 +20,44 @@ const EMPTY: ProductFormData = {
   available: true,
 };
 
-export default function ProductForm({ categories }: { categories: Category[] }) {
+export default function ProductForm({ categories, initial }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [form, setForm] = useState<ProductFormData>(EMPTY);
+  const [form, setForm] = useState<ProductFormData>(initial ?? EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const isEdit = !!initial?.id;
 
   function handleField(
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value, type } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al subir imagen");
+      setForm((prev) => ({ ...prev, image_url: data.url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al subir imagen");
+    } finally {
+      setUploading(false);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -43,7 +70,10 @@ export default function ProductForm({ categories }: { categories: Category[] }) 
     }
 
     startTransition(async () => {
-      const res = await createProduct(form);
+      const res = isEdit
+        ? await updateProduct(initial!.id!, form)
+        : await createProduct(form);
+
       if (res.success) {
         router.push("/admin/products");
         router.refresh();
@@ -112,31 +142,55 @@ export default function ProductForm({ categories }: { categories: Category[] }) 
         </Field>
       </div>
 
-      {/* URL imagen */}
-      <Field label="URL de imagen">
-        <input
-          name="image_url"
-          type="url"
-          placeholder="https://..."
-          value={form.image_url}
-          onChange={handleField}
-          className={inputCls}
-        />
-      </Field>
+      {/* Imagen */}
+      <Field label="Imagen del producto">
+        <div className="flex items-center gap-3">
+          {/* Preview */}
+          <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+            {form.image_url ? (
+              <Image
+                src={form.image_url}
+                alt="preview"
+                fill
+                sizes="80px"
+                className="object-cover"
+                onError={() => setForm((p) => ({ ...p, image_url: "" }))}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
+            )}
+          </div>
 
-      {/* Preview imagen */}
-      {form.image_url && (
-        <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100">
-          <Image
-            src={form.image_url}
-            alt="preview"
-            fill
-            sizes="96px"
-            className="object-cover"
-            onError={() => setForm((p) => ({ ...p, image_url: "" }))}
-          />
+          <div className="flex-1 space-y-2">
+            {/* Upload desde dispositivo */}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="w-full border border-dashed border-brand-400 text-brand-500 rounded-xl py-2 text-sm font-medium hover:bg-brand-50 transition disabled:opacity-50"
+            >
+              {uploading ? "Subiendo..." : "📁 Elegir imagen"}
+            </button>
+
+            {/* O pegar URL */}
+            <input
+              name="image_url"
+              type="url"
+              placeholder="O pegá una URL..."
+              value={form.image_url}
+              onChange={handleField}
+              className={inputCls}
+            />
+          </div>
         </div>
-      )}
+      </Field>
 
       {/* Disponible */}
       <label className="flex items-center gap-3 cursor-pointer select-none">
@@ -150,12 +204,10 @@ export default function ProductForm({ categories }: { categories: Category[] }) 
         <span className="text-sm text-gray-700">Disponible al publicar</span>
       </label>
 
-      {/* Error */}
       {error && (
         <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">{error}</p>
       )}
 
-      {/* Acciones */}
       <div className="flex gap-3 pt-2">
         <button
           type="button"
@@ -166,10 +218,10 @@ export default function ProductForm({ categories }: { categories: Category[] }) 
         </button>
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || uploading}
           className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white rounded-xl py-3 text-sm font-semibold transition"
         >
-          {isPending ? "Guardando..." : "Guardar producto"}
+          {isPending ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear producto"}
         </button>
       </div>
     </form>

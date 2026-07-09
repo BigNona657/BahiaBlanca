@@ -3,6 +3,7 @@
 import { useTransition, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Link from "next/link";
 import {
   toggleProductAvailability,
   deleteProduct,
@@ -35,7 +36,7 @@ export default function ProductsTable({ products }: { products: AdminProduct[] }
             <th className="px-4 py-3 text-left">Categoría</th>
             <th className="px-4 py-3 text-right">Precio</th>
             <th className="px-4 py-3 text-center">Estado</th>
-            <th className="px-4 py-3 text-center">Acciones</th>
+            <th className="px-4 py-3 text-center" colSpan={2}>Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -101,6 +102,14 @@ function ProductRow({ product: p }: { product: AdminProduct }) {
         <AvailabilityToggle available={p.available} onToggle={handleToggle} disabled={isPending} />
       </td>
       <td className="px-4 py-3 text-center">
+        <Link
+          href={`/admin/products/${p.id}`}
+          className="text-xs text-brand-500 hover:text-brand-700 transition"
+        >
+          Editar
+        </Link>
+      </td>
+      <td className="px-4 py-3 text-center">
         <button
           onClick={handleDelete}
           disabled={isPending}
@@ -150,6 +159,12 @@ function ProductMobileCard({ product: p }: { product: AdminProduct }) {
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0">
         <AvailabilityToggle available={p.available} onToggle={handleToggle} disabled={isPending} />
+        <Link
+          href={`/admin/products/${p.id}`}
+          className="text-xs text-brand-500 hover:text-brand-700"
+        >
+          Editar
+        </Link>
         <button
           onClick={handleDelete}
           disabled={isPending}

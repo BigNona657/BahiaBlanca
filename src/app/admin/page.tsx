@@ -56,6 +56,9 @@ export default async function AdminDashboard() {
                   <p className="text-sm font-semibold text-gray-800 truncate">
                     {order.customer_name ?? order.customer_email ?? "Cliente"}
                   </p>
+                  {order.phone && (
+                    <p className="text-xs text-brand-500 font-medium mt-0.5">📞 {order.phone}</p>
+                  )}
                   <p className="text-xs text-gray-400 truncate">{order.delivery_address}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {PAYMENT_LABEL[order.payment_method]}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getClientOrderDetail } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
+import OrderStatusTracker from "@/components/store/OrderStatusTracker";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -56,7 +57,7 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
           <h1 className="text-xl font-bold text-gray-800">
             {isNew ? "¡Pedido confirmado! 🎉" : `Pedido #${order.id}`}
           </h1>
-          <StatusBadge status={order.status} />
+          <OrderStatusTracker orderId={order.id} initialStatus={order.status} />
         </div>
         <p className="text-xs text-gray-400 mt-1 capitalize">
           {dateLabel} · {timeLabel}

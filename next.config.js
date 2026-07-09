@@ -72,8 +72,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
-      // Agregá acá el hostname donde subas las imágenes de productos
-      // { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
 };

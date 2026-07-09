@@ -156,8 +156,8 @@ export async function createOrder(
     }
 
     const orderRows = await sql`
-      INSERT INTO orders (user_id, status, payment_method, delivery_address, subtotal, delivery_fee, total)
-      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${subtotal}, 0, ${total})
+      INSERT INTO orders (user_id, status, payment_method, delivery_address, phone, subtotal, delivery_fee, total)
+      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total})
       RETURNING id
     `;
     const orderId = orderRows[0].id as number;
