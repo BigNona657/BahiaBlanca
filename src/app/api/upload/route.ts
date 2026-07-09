@@ -18,9 +18,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No se recibió ningún archivo." }, { status: 400 });
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 3 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "La imagen supera el límite de 2MB." },
+        { error: "La imagen supera el límite de 3MB. Intentá con una imagen más pequeña." },
         { status: 413 }
       );
     }

@@ -41,15 +41,58 @@ export default function ProductForm({ categories, initial }: Props) {
     }));
   }
 
+  async function compressImage(file: File, maxSizeBytes = 1.5 * 1024 * 1024): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 1200;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) { height = Math.round((height * MAX_DIM) / width); width = MAX_DIM; }
+          else { width = Math.round((width * MAX_DIM) / height); height = MAX_DIM; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.85;
+        const tryCompress = () => {
+          canvas.toBlob((blob) => {
+            if (!blob) return reject(new Error("No se pudo comprimir la imagen."));
+            if (blob.size <= maxSizeBytes || quality <= 0.3) {
+              resolve(new File([blob], file.name, { type: "image/jpeg" }));
+            } else {
+              quality -= 0.1;
+              tryCompress();
+            }
+          }, "image/jpeg", quality);
+        };
+        tryCompress();
+      };
+      img.onerror = () => reject(new Error("No se pudo leer la imagen."));
+      img.src = url;
+    });
+  }
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo debe ser una imagen.");
+      return;
+    }
+
     setUploading(true);
     setError(null);
     try {
+      const compressed = await compressImage(file);
+
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
 
       let data: { url?: string; error?: string } = {};
@@ -60,7 +103,6 @@ export default function ProductForm({ categories, initial }: Props) {
       }
 
       if (!res.ok) throw new Error(data.error ?? "Error al subir imagen.");
-      // Guardamos el base64 en image_data y limpiamos image_url
       setForm((prev) => ({ ...prev, image_data: data.url!, image_url: "" }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al subir imagen.");
