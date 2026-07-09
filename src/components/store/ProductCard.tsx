@@ -5,14 +5,17 @@ import type { Product } from "@/types/menu";
 
 type Props = {
   product: Product;
-  onAdd: (product: Product) => void;
+  onOpen: (product: Product) => void;
 };
 
-export default function ProductCard({ product, onAdd }: Props) {
+export default function ProductCard({ product, onOpen }: Props) {
   const price = parseFloat(product.price);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col active:scale-95 transition-transform">
+    <div
+      onClick={() => onOpen(product)}
+      className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col active:scale-95 transition-transform cursor-pointer"
+    >
       <div className="relative w-full aspect-square bg-gray-100">
         {(product.image_data || product.image_url) ? (
           <Image
@@ -41,12 +44,9 @@ export default function ProductCard({ product, onAdd }: Props) {
           <span className="text-lg font-bold text-brand-600">
             ${price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
           </span>
-          <button
-            onClick={() => onAdd(product)}
-            className="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-xl px-3 py-1.5 text-sm font-semibold transition"
-          >
+          <span className="bg-brand-500 text-white rounded-xl px-3 py-1.5 text-sm font-semibold">
             + Agregar
-          </button>
+          </span>
         </div>
       </div>
     </div>

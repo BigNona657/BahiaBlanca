@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { Category, Product } from "@/types/menu";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import ProductCard from "./ProductCard";
+import ProductModal from "./ProductModal";
 
 type Props = {
   categories: Category[];
@@ -13,6 +14,7 @@ type Props = {
 
 export default function MenuClient({ categories, products }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
 
   const filtered = useMemo(
@@ -21,6 +23,13 @@ export default function MenuClient({ categories, products }: Props) {
         ? products
         : products.filter((p) => p.category_id === selectedCategory),
     [products, selectedCategory]
+  );
+
+  const handleAddWithQty = useCallback(
+    (product: Product, quantity: number) => {
+      for (let i = 0; i < quantity; i++) addToCart(product);
+    },
+    [addToCart]
   );
 
   return (
@@ -39,10 +48,16 @@ export default function MenuClient({ categories, products }: Props) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
           {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} onAdd={addToCart} />
+            <ProductCard key={product.id} product={product} onOpen={setActiveProduct} />
           ))}
         </div>
       )}
+
+      <ProductModal
+        product={activeProduct}
+        onClose={() => setActiveProduct(null)}
+        onAdd={handleAddWithQty}
+      />
     </div>
   );
 }
