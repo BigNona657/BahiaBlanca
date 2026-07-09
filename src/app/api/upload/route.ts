@@ -1,17 +1,10 @@
-import { put } from "@vercel/blob";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sql } from "@/lib/db/client";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json(
-        { error: "BLOB_READ_WRITE_TOKEN no configurado en las variables de entorno." },
-        { status: 500 }
-      );
-    }
-
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "ADMIN") {
       return NextResponse.json({ error: "No autorizado." }, { status: 401 });
@@ -19,27 +12,33 @@ export async function POST(req: Request) {
 
     const form = await req.formData();
     const file = form.get("file") as File | null;
+    const productId = form.get("productId") as string | null;
 
     if (!file) {
       return NextResponse.json({ error: "No se recibió ningún archivo." }, { status: 400 });
     }
 
-    if (file.size > 4 * 1024 * 1024) {
+    if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "La imagen supera el límite de 4MB." },
+        { error: "La imagen supera el límite de 2MB." },
         { status: 413 }
       );
     }
 
-    const blob = await put(`products/${Date.now()}-${file.name}`, file, {
-      access: "public",
-    });
+    const buffer = await file.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    return NextResponse.json({ url: blob.url });
+    // Si viene productId, actualiza directamente en la DB
+    if (productId) {
+      await sql`UPDATE products SET image_data = ${dataUrl} WHERE id = ${parseInt(productId)}`;
+    }
+
+    return NextResponse.json({ url: dataUrl });
   } catch (err) {
     console.error("[upload]", err);
     return NextResponse.json(
-      { error: "Error interno al subir la imagen. Revisá los logs de Vercel." },
+      { error: "Error interno al procesar la imagen." },
       { status: 500 }
     );
   }

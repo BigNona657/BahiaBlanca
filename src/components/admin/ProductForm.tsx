@@ -17,6 +17,7 @@ const EMPTY: ProductFormData = {
   price: "",
   category_id: "",
   image_url: "",
+  image_data: null,
   available: true,
 };
 
@@ -55,11 +56,12 @@ export default function ProductForm({ categories, initial }: Props) {
       try {
         data = await res.json();
       } catch {
-        throw new Error(`Error del servidor (${res.status}). Revisá los logs de Vercel.`);
+        throw new Error(`Error del servidor (${res.status}).`);
       }
 
       if (!res.ok) throw new Error(data.error ?? "Error al subir imagen.");
-      setForm((prev) => ({ ...prev, image_url: data.url! }));
+      // Guardamos el base64 en image_data y limpiamos image_url
+      setForm((prev) => ({ ...prev, image_data: data.url!, image_url: "" }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al subir imagen.");
     } finally {
@@ -153,16 +155,16 @@ export default function ProductForm({ categories, initial }: Props) {
       {/* Imagen */}
       <Field label="Imagen del producto">
         <div className="flex items-center gap-3">
-          {/* Preview */}
+          {/* Preview: prioridad image_data sobre image_url */}
           <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-            {form.image_url ? (
+            {form.image_data || form.image_url ? (
               <Image
-                src={form.image_url}
+                src={form.image_data || form.image_url!}
                 alt="preview"
                 fill
                 sizes="80px"
                 className="object-cover"
-                onError={() => setForm((p) => ({ ...p, image_url: "" }))}
+                onError={() => setForm((p) => ({ ...p, image_data: null, image_url: "" }))}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>

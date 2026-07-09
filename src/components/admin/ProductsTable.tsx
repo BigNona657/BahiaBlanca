@@ -78,8 +78,8 @@ function ProductRow({ product: p }: { product: AdminProduct }) {
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-            {p.image_url ? (
-              <Image src={p.image_url} alt={p.name} fill sizes="40px" className="object-cover" />
+            {(p.image_data || p.image_url) ? (
+              <Image src={p.image_data || p.image_url!} alt={p.name} fill sizes="40px" className="object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-lg">🍽️</div>
             )}
@@ -142,8 +142,8 @@ function ProductMobileCard({ product: p }: { product: AdminProduct }) {
   return (
     <div className={`flex items-center gap-3 p-4 ${isPending ? "opacity-50" : ""}`}>
       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-        {p.image_url ? (
-          <Image src={p.image_url} alt={p.name} fill sizes="56px" className="object-cover" />
+        {(p.image_data || p.image_url) ? (
+          <Image src={p.image_data || p.image_url!} alt={p.name} fill sizes="56px" className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
         )}

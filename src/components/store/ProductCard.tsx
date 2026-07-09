@@ -14,9 +14,9 @@ export default function ProductCard({ product, onAdd }: Props) {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col active:scale-95 transition-transform">
       <div className="relative w-full aspect-square bg-gray-100">
-        {product.image_url ? (
+        {(product.image_data || product.image_url) ? (
           <Image
-            src={product.image_url}
+            src={product.image_data || product.image_url!}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"

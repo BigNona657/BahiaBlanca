@@ -12,8 +12,9 @@ export type Product = {
   name: string;
   slug: string;
   description: string | null;
-  price: string; // Neon devuelve NUMERIC como string
+  price: string;
   image_url: string | null;
+  image_data: string | null;
   available: boolean;
   sort_order: number;
 };

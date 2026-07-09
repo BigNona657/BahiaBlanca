@@ -34,6 +34,7 @@ export type ProductFormData = {
   price: string;
   category_id: string;
   image_url: string;
+  image_data?: string | null;
   available: boolean;
 };
 
@@ -115,7 +116,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
   const rows = await sql`
     SELECT
       p.id, p.category_id, p.name, p.slug, p.description,
-      p.price, p.image_url, p.available, p.sort_order,
+      p.price, p.image_url, p.image_data, p.available, p.sort_order,
       c.name AS category_name
     FROM products p
     JOIN categories c ON c.id = p.category_id
@@ -135,7 +136,7 @@ export async function createProduct(
     if (isNaN(price) || price <= 0) return { success: false, error: "Precio inválido." };
 
     await sql`
-      INSERT INTO products (category_id, name, slug, description, price, image_url, available)
+      INSERT INTO products (category_id, name, slug, description, price, image_url, image_data, available)
       VALUES (
         ${parseInt(data.category_id)},
         ${data.name.trim()},
@@ -143,6 +144,7 @@ export async function createProduct(
         ${data.description.trim() || null},
         ${price},
         ${data.image_url.trim() || null},
+        ${data.image_data ?? null},
         ${data.available}
       )
     `;
@@ -152,7 +154,6 @@ export async function createProduct(
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
-    // Slug duplicado
     if (msg.includes("unique") || msg.includes("duplicate")) {
       return { success: false, error: "Ya existe un producto con ese nombre." };
     }
@@ -221,6 +222,7 @@ export async function updateProduct(
         description  = ${data.description.trim() || null},
         price        = ${price},
         image_url    = ${data.image_url.trim() || null},
+        image_data   = ${data.image_data ?? null},
         available    = ${data.available},
         updated_at   = NOW()
       WHERE id = ${productId}
