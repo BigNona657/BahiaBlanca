@@ -11,12 +11,13 @@ type Props = {
   onClose: () => void;
   onAdd: (product: Product, quantity: number, note?: string) => void;
   isAuthenticated: boolean;
+  iceCreamFlavors: string[];
 };
 
 const IS_ICE_CREAM = (p: Product) =>
   p.name.toLowerCase().includes("helado");
 
-export default function ProductModal({ product, onClose, onAdd, isAuthenticated }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const router = useRouter();
@@ -110,7 +111,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated 
 
           {/* ── Selector de helado ── */}
           {isIceCream && !iceCreamNote && (
-            <IceCreamSelector onConfirm={handleIceCreamConfirm} />
+            <IceCreamSelector sabores={iceCreamFlavors} onConfirm={handleIceCreamConfirm} />
           )}
 
           {/* Resumen selección helado */}

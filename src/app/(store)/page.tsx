@@ -1,12 +1,14 @@
 import { getCategories, getProductsByCategory } from "@/lib/actions/menu";
+import { getIceCreamFlavors } from "@/lib/actions/settings";
 import MenuClient from "@/components/store/MenuClient";
 
-export const revalidate = 60; // ISR: revalida cada 60 segundos
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const [categories, products] = await Promise.all([
+  const [categories, products, iceCreamFlavors] = await Promise.all([
     getCategories(),
     getProductsByCategory(),
+    getIceCreamFlavors(),
   ]);
 
   return (
@@ -29,8 +31,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Menú interactivo */}
-      <MenuClient categories={categories} products={products} />
+      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} />
     </div>
   );
 }

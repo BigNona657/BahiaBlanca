@@ -11,6 +11,21 @@ export type AppSettings = {
   logo_size: number;
 };
 
+const DEFAULT_FLAVORS = [
+  "Dulce de leche",
+  "Chocolate",
+  "Vainilla",
+  "Frutilla",
+  "Limón",
+  "Crema del cielo",
+  "Tramontana",
+  "Maracuyá",
+  "Menta granizada",
+  "Banana split",
+  "Mousse de chocolate",
+  "Sambayón",
+];
+
 export async function getAppSettings(): Promise<AppSettings> {
   const rows = await sql`SELECT key, value FROM app_settings`;
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
@@ -19,6 +34,34 @@ export async function getAppSettings(): Promise<AppSettings> {
     logo_data: (map.logo_data as string) ?? "",
     logo_size: Number(map.logo_size ?? 36),
   };
+}
+
+export async function getIceCreamFlavors(): Promise<string[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'ice_cream_flavors' LIMIT 1`;
+  if (!rows.length) return DEFAULT_FLAVORS;
+  try {
+    return JSON.parse(rows[0].value as string) as string[];
+  } catch {
+    return DEFAULT_FLAVORS;
+  }
+}
+
+export async function saveIceCreamFlavors(
+  flavors: string[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(flavors);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('ice_cream_flavors', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los sabores." };
+  }
 }
 
 export async function saveAppSettings(

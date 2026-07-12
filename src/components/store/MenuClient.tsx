@@ -11,9 +11,10 @@ import ProductModal from "./ProductModal";
 type Props = {
   categories: Category[];
   products: Product[];
+  iceCreamFlavors: string[];
 };
 
-export default function MenuClient({ categories, products }: Props) {
+export default function MenuClient({ categories, products, iceCreamFlavors }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
@@ -60,6 +61,7 @@ export default function MenuClient({ categories, products }: Props) {
         onClose={() => setActiveProduct(null)}
         onAdd={handleAddWithQty}
         isAuthenticated={!!session}
+        iceCreamFlavors={iceCreamFlavors}
       />
     </div>
   );
