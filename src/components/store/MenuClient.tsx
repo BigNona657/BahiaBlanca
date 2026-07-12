@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
-import type { IceCreamFlavor } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import ProductCard from "./ProductCard";
@@ -13,9 +13,10 @@ type Props = {
   categories: Category[];
   products: Product[];
   iceCreamFlavors: IceCreamFlavor[];
+  iceCreamPotes: IceCreamPote[];
 };
 
-export default function MenuClient({ categories, products, iceCreamFlavors }: Props) {
+export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
@@ -63,6 +64,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors }: Pr
         onAdd={handleAddWithQty}
         isAuthenticated={!!session}
         iceCreamFlavors={iceCreamFlavors}
+        iceCreamPotes={iceCreamPotes}
       />
     </div>
   );

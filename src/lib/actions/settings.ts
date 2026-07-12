@@ -16,6 +16,18 @@ export type IceCreamFlavor = {
   available: boolean;
 };
 
+export type IceCreamPote = {
+  label: string;
+  value: string;
+  price: number;
+};
+
+const DEFAULT_POTES: IceCreamPote[] = [
+  { label: "Pote 1 kg",  value: "1kg",   price: 0 },
+  { label: "Pote ½ kg", value: "1/2kg", price: 0 },
+  { label: "Pote ¼ kg", value: "1/4kg", price: 0 },
+];
+
 const DEFAULT_FLAVORS: IceCreamFlavor[] = [
   { name: "Dulce de leche", available: true },
   { name: "Chocolate", available: true },
@@ -71,6 +83,34 @@ export async function saveIceCreamFlavors(
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo guardar los sabores." };
+  }
+}
+
+export async function getIceCreamPotes(): Promise<IceCreamPote[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'ice_cream_potes' LIMIT 1`;
+  if (!rows.length) return DEFAULT_POTES;
+  try {
+    return JSON.parse(rows[0].value as string) as IceCreamPote[];
+  } catch {
+    return DEFAULT_POTES;
+  }
+}
+
+export async function saveIceCreamPotes(
+  potes: IceCreamPote[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(potes);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('ice_cream_potes', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los precios." };
   }
 }
 

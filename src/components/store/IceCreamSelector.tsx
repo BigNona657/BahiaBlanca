@@ -1,23 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { IceCreamFlavor } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
 
 export type IceCreamSelection = {
   pote: string;
   sabores: string[];
+  price: number;
 };
 
 type Props = {
+  potes: IceCreamPote[];
   sabores: IceCreamFlavor[];
   onConfirm: (selection: IceCreamSelection) => void;
 };
-
-const POTES = [
-  { label: "Pote 1 kg", value: "1kg" },
-  { label: "Pote ½ kg", value: "1/2kg" },
-  { label: "Pote ¼ kg", value: "1/4kg" },
-];
 
 const MAX_SABORES: Record<string, number> = {
   "1kg":   4,
@@ -25,23 +21,23 @@ const MAX_SABORES: Record<string, number> = {
   "1/4kg": 2,
 };
 
-export default function IceCreamSelector({ sabores, onConfirm }: Props) {
-  const [pote, setPote] = useState<string | null>(null);
+export default function IceCreamSelector({ potes, sabores, onConfirm }: Props) {
+  const [pote, setPote] = useState<IceCreamPote | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
   const available = sabores.filter((s) => s.available);
-  const maxSabores = pote ? MAX_SABORES[pote] : 0;
+  const maxSabores = pote ? (MAX_SABORES[pote.value] ?? 2) : 0;
 
-  function toggleSabor(sabor: string) {
+  function toggleSabor(name: string) {
     setSelected((prev) => {
-      if (prev.includes(sabor)) return prev.filter((s) => s !== sabor);
+      if (prev.includes(name)) return prev.filter((s) => s !== name);
       if (prev.length >= maxSabores) return prev;
-      return [...prev, sabor];
+      return [...prev, name];
     });
   }
 
-  function handlePoteSelect(value: string) {
-    setPote(value);
+  function handlePoteSelect(p: IceCreamPote) {
+    setPote(p);
     setSelected([]);
   }
 
@@ -56,17 +52,22 @@ export default function IceCreamSelector({ sabores, onConfirm }: Props) {
           1. Elegí el tamaño
         </p>
         <div className="grid grid-cols-3 gap-2">
-          {POTES.map((p) => (
+          {potes.map((p) => (
             <button
               key={p.value}
-              onClick={() => handlePoteSelect(p.value)}
-              className={`rounded-2xl py-3 text-sm font-semibold border-2 transition ${
-                pote === p.value
+              onClick={() => handlePoteSelect(p)}
+              className={`rounded-2xl py-3 px-2 text-sm font-semibold border-2 transition flex flex-col items-center gap-0.5 ${
+                pote?.value === p.value
                   ? "border-brand-500 bg-brand-50 text-brand-600"
                   : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
               }`}
             >
-              {p.label}
+              <span>{p.label}</span>
+              {p.price > 0 && (
+                <span className={`text-xs font-normal ${pote?.value === p.value ? "text-brand-400" : "text-gray-400"}`}>
+                  ${p.price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -110,7 +111,7 @@ export default function IceCreamSelector({ sabores, onConfirm }: Props) {
       {/* ── Confirmar ── */}
       {canConfirm && (
         <button
-          onClick={() => onConfirm({ pote: pote!, sabores: selected })}
+          onClick={() => onConfirm({ pote: pote!.label, sabores: selected, price: pote!.price })}
           className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm transition"
         >
           Confirmar selección

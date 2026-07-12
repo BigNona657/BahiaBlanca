@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
-import type { IceCreamFlavor } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 
 type Props = {
@@ -13,18 +13,20 @@ type Props = {
   onAdd: (product: Product, quantity: number, note?: string) => void;
   isAuthenticated: boolean;
   iceCreamFlavors: IceCreamFlavor[];
+  iceCreamPotes: IceCreamPote[];
 };
 
 const IS_ICE_CREAM = (p: Product) =>
   p.name.toLowerCase().includes("helado");
 
-export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
+  const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (product) { setQty(1); setIceCreamNote(null); }
+    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); }
   }, [product]);
 
   useEffect(() => {
@@ -51,14 +53,15 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote]);
 
   function handleIceCreamConfirm(selection: IceCreamSelection) {
-    const note = `Pote ${selection.pote} | Sabores: ${selection.sabores.join(", ")}`;
+    const note = `${selection.pote} | Sabores: ${selection.sabores.join(", ")}`;
     setIceCreamNote(note);
+    setIceCreamPrice(selection.price);
   }
 
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
-  const price = parseFloat(product.price);
+  const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice : parseFloat(product.price);
   const total = price * qty;
   const hasImage = !!(product.image_data || product.image_url);
 
@@ -112,7 +115,11 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
           {/* ── Selector de helado ── */}
           {isIceCream && !iceCreamNote && (
-            <IceCreamSelector sabores={iceCreamFlavors} onConfirm={handleIceCreamConfirm} />
+            <IceCreamSelector
+              potes={iceCreamPotes}
+              sabores={iceCreamFlavors}
+              onConfirm={handleIceCreamConfirm}
+            />
           )}
 
           {/* Resumen selección helado */}

@@ -1,14 +1,15 @@
 import { getCategories, getProductsByCategory } from "@/lib/actions/menu";
-import { getIceCreamFlavors } from "@/lib/actions/settings";
+import { getIceCreamFlavors, getIceCreamPotes } from "@/lib/actions/settings";
 import MenuClient from "@/components/store/MenuClient";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [categories, products, iceCreamFlavors] = await Promise.all([
+  const [categories, products, iceCreamFlavors, iceCreamPotes] = await Promise.all([
     getCategories(),
     getProductsByCategory(),
     getIceCreamFlavors(),
+    getIceCreamPotes(),
   ]);
 
   return (
@@ -31,7 +32,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} />
+      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} />
     </div>
   );
 }
