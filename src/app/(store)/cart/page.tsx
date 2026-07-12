@@ -8,6 +8,8 @@ import { useCart } from "@/context/CartContext";
 import CartItemRow from "@/components/store/CartItemRow";
 import { createOrder, type CheckoutFormData } from "@/lib/actions/orders";
 
+const ALIAS = "big-nona";
+
 const INITIAL_FORM: CheckoutFormData = {
   customerName: "",
   phone: "",
@@ -29,6 +31,7 @@ export default function CartPage() {
     customerName: session?.user?.name ?? "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   function handleField(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -39,12 +42,17 @@ export default function CartPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (form.paymentMethod === "TRANSFER") {
+      setShowTransferModal(true);
+      return;
+    }
+    confirmOrder();
+  }
 
+  function confirmOrder() {
     startTransition(async () => {
       const result = await createOrder(form, items);
       if (result.success) {
-        // Primero navegamos, luego limpiamos el carrito para evitar
-        // que el componente re-renderice con carrito vacío antes de salir
         router.push(`/orders/${result.orderId}?new=1`);
         clearCart();
       } else {
@@ -222,6 +230,57 @@ export default function CartPage() {
           </form>
         </div>
       </div>
+
+      {/* ── Modal transferencia ── */}
+      {showTransferModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-6 space-y-5">
+            <div className="text-center">
+              <span className="text-4xl">🏦</span>
+              <h2 className="text-lg font-bold text-gray-800 mt-2">Pago por transferencia</h2>
+              <p className="text-sm text-gray-500 mt-1">Realizá la transferencia antes de confirmar el pedido.</p>
+            </div>
+
+            {/* Alias */}
+            <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-gray-400">Alias</p>
+                <p className="text-base font-bold text-gray-800 tracking-wide">{ALIAS}</p>
+              </div>
+              <button
+                onClick={() => navigator.clipboard.writeText(ALIAS)}
+                className="text-xs bg-brand-100 text-brand-600 font-semibold px-3 py-1.5 rounded-xl hover:bg-brand-200 transition"
+              >
+                Copiar
+              </button>
+            </div>
+
+            {/* Monto */}
+            <div className="bg-brand-50 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <p className="text-sm text-gray-500">Monto a transferir</p>
+              <p className="text-xl font-bold text-brand-600">
+                ${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="flex-1 border border-gray-300 text-gray-600 rounded-2xl py-3 text-sm font-medium hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { setShowTransferModal(false); confirmOrder(); }}
+                disabled={isPending}
+                className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white rounded-2xl py-3 text-sm font-bold transition"
+              >
+                {isPending ? "Confirmando..." : "Ya transferí ✔️"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
