@@ -11,19 +11,24 @@ export type AppSettings = {
   logo_size: number;
 };
 
-const DEFAULT_FLAVORS = [
-  "Dulce de leche",
-  "Chocolate",
-  "Vainilla",
-  "Frutilla",
-  "Limón",
-  "Crema del cielo",
-  "Tramontana",
-  "Maracuyá",
-  "Menta granizada",
-  "Banana split",
-  "Mousse de chocolate",
-  "Sambayón",
+export type IceCreamFlavor = {
+  name: string;
+  available: boolean;
+};
+
+const DEFAULT_FLAVORS: IceCreamFlavor[] = [
+  { name: "Dulce de leche", available: true },
+  { name: "Chocolate", available: true },
+  { name: "Vainilla", available: true },
+  { name: "Frutilla", available: true },
+  { name: "Limón", available: true },
+  { name: "Crema del cielo", available: true },
+  { name: "Tramontana", available: true },
+  { name: "Maracuyá", available: true },
+  { name: "Menta granizada", available: true },
+  { name: "Banana split", available: true },
+  { name: "Mousse de chocolate", available: true },
+  { name: "Sambayón", available: true },
 ];
 
 export async function getAppSettings(): Promise<AppSettings> {
@@ -36,18 +41,23 @@ export async function getAppSettings(): Promise<AppSettings> {
   };
 }
 
-export async function getIceCreamFlavors(): Promise<string[]> {
+export async function getIceCreamFlavors(): Promise<IceCreamFlavor[]> {
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'ice_cream_flavors' LIMIT 1`;
   if (!rows.length) return DEFAULT_FLAVORS;
   try {
-    return JSON.parse(rows[0].value as string) as string[];
+    const parsed = JSON.parse(rows[0].value as string);
+    // Migrar formato viejo (string[]) al nuevo
+    if (Array.isArray(parsed) && typeof parsed[0] === "string") {
+      return (parsed as string[]).map((name) => ({ name, available: true }));
+    }
+    return parsed as IceCreamFlavor[];
   } catch {
     return DEFAULT_FLAVORS;
   }
 }
 
 export async function saveIceCreamFlavors(
-  flavors: string[]
+  flavors: IceCreamFlavor[]
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };

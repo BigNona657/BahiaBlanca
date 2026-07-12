@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { IceCreamFlavor } from "@/lib/actions/settings";
 
 export type IceCreamSelection = {
   pote: string;
@@ -8,7 +9,7 @@ export type IceCreamSelection = {
 };
 
 type Props = {
-  sabores: string[];
+  sabores: IceCreamFlavor[];
   onConfirm: (selection: IceCreamSelection) => void;
 };
 
@@ -28,6 +29,7 @@ export default function IceCreamSelector({ sabores, onConfirm }: Props) {
   const [pote, setPote] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
+  const available = sabores.filter((s) => s.available);
   const maxSabores = pote ? MAX_SABORES[pote] : 0;
 
   function toggleSabor(sabor: string) {
@@ -80,13 +82,13 @@ export default function IceCreamSelector({ sabores, onConfirm }: Props) {
             {selected.length} de {maxSabores} seleccionado{selected.length !== 1 ? "s" : ""}
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {sabores.map((s) => {
-              const isSelected = selected.includes(s);
+            {available.map(({ name }) => {
+              const isSelected = selected.includes(name);
               const disabled = !isSelected && selected.length >= maxSabores;
               return (
                 <button
-                  key={s}
-                  onClick={() => toggleSabor(s)}
+                  key={name}
+                  onClick={() => toggleSabor(name)}
                   disabled={disabled}
                   className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition ${
                     isSelected
@@ -97,7 +99,7 @@ export default function IceCreamSelector({ sabores, onConfirm }: Props) {
                   }`}
                 >
                   {isSelected && <span className="mr-1">✓</span>}
-                  {s}
+                  {name}
                 </button>
               );
             })}

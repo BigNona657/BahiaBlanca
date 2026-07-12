@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
+import type { IceCreamFlavor } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
   onClose: () => void;
   onAdd: (product: Product, quantity: number, note?: string) => void;
   isAuthenticated: boolean;
-  iceCreamFlavors: string[];
+  iceCreamFlavors: IceCreamFlavor[];
 };
 
 const IS_ICE_CREAM = (p: Product) =>

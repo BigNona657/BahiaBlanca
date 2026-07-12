@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
+import type { IceCreamFlavor } from "@/lib/actions/settings";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import ProductCard from "./ProductCard";
@@ -11,7 +12,7 @@ import ProductModal from "./ProductModal";
 type Props = {
   categories: Category[];
   products: Product[];
-  iceCreamFlavors: string[];
+  iceCreamFlavors: IceCreamFlavor[];
 };
 
 export default function MenuClient({ categories, products, iceCreamFlavors }: Props) {
