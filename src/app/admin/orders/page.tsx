@@ -79,6 +79,18 @@ function OrderCard({
         )}
         <p className="text-xs text-gray-400 truncate mt-0.5">{order.delivery_address}</p>
         <p className="text-xs text-gray-400 mt-0.5">{PAYMENT_LABEL[order.payment_method]}</p>
+        {order.items.length > 0 && (
+          <ul className="mt-1.5 space-y-0.5">
+            {order.items.map((item, i) => (
+              <li key={i} className="text-xs text-gray-600">
+                <span className="font-medium">{item.quantity}×</span> {item.product_name}
+                {item.note && (
+                  <span className="text-brand-500 ml-1">({item.note})</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 shrink-0">

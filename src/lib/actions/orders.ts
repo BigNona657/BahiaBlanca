@@ -47,6 +47,7 @@ export type ClientOrderDetail = ClientOrder & {
     product_name: string;
     quantity: number;
     unit_price: string;
+    note: string | null;
   }[];
 };
 
@@ -98,7 +99,8 @@ export async function getClientOrderDetail(
     SELECT
       p.name AS product_name,
       oi.quantity,
-      oi.unit_price
+      oi.unit_price,
+      oi.note
     FROM order_items oi
     JOIN products p ON p.id = oi.product_id
     WHERE oi.order_id = ${orderId}

@@ -24,6 +24,7 @@ export type AdminOrder = {
   created_at: string;
   customer_name: string | null;
   customer_email: string | null;
+  items: { product_name: string; quantity: number; note: string | null }[];
 };
 
 export type AdminProduct = Product & { category_name: string };
@@ -41,7 +42,7 @@ export type ProductFormData = {
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export async function getAdminOrders(activeOnly = false): Promise<AdminOrder[]> {
-  const rows = activeOnly
+  const orderRows = activeOnly
     ? await sql`
         SELECT
           o.id, o.status, o.payment_method, o.delivery_address,
@@ -63,7 +64,24 @@ export async function getAdminOrders(activeOnly = false): Promise<AdminOrder[]> 
         JOIN users u ON u.id = o.user_id
         ORDER BY o.created_at DESC
       `;
-  return rows as AdminOrder[];
+
+  if (!orderRows.length) return [];
+
+  const orderIds = orderRows.map((o) => o.id as number);
+  const itemRows = await sql`
+    SELECT oi.order_id, p.name AS product_name, oi.quantity, oi.note
+    FROM order_items oi
+    JOIN products p ON p.id = oi.product_id
+    WHERE oi.order_id = ANY(${orderIds})
+    ORDER BY oi.id ASC
+  `;
+
+  return orderRows.map((o) => ({
+    ...o,
+    items: itemRows
+      .filter((i) => i.order_id === o.id)
+      .map((i) => ({ product_name: i.product_name as string, quantity: i.quantity as number, note: i.note as string | null })),
+  })) as AdminOrder[];
 }
 
 export async function updateOrderStatus(

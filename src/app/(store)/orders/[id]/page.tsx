@@ -82,12 +82,17 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
         </div>
         <div className="divide-y divide-gray-100">
           {order.items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3 gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-bold text-brand-500 bg-brand-50 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+            <div key={i} className="flex items-start justify-between px-4 py-3 gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <span className="text-xs font-bold text-brand-500 bg-brand-50 rounded-full w-6 h-6 flex items-center justify-center shrink-0 mt-0.5">
                   {item.quantity}
                 </span>
-                <span className="text-sm text-gray-700 truncate">{item.product_name}</span>
+                <div className="min-w-0">
+                  <span className="text-sm text-gray-700">{item.product_name}</span>
+                  {item.note && (
+                    <p className="text-xs text-brand-500 mt-0.5">{item.note}</p>
+                  )}
+                </div>
               </div>
               <span className="text-sm font-semibold text-gray-800 shrink-0">
                 ${(parseFloat(item.unit_price) * item.quantity).toLocaleString("es-AR", {
