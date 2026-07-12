@@ -120,6 +120,7 @@ CREATE TABLE order_items (
   product_id INT            NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
   quantity   INT            NOT NULL CHECK (quantity > 0),
   unit_price NUMERIC(10, 2) NOT NULL,
+  note       TEXT,
   subtotal   NUMERIC(10, 2) GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
 

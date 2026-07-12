@@ -28,8 +28,8 @@ export default function MenuClient({ categories, products }: Props) {
   );
 
   const handleAddWithQty = useCallback(
-    (product: Product, quantity: number) => {
-      for (let i = 0; i < quantity; i++) addToCart(product);
+    (product: Product, quantity: number, note?: string) => {
+      for (let i = 0; i < quantity; i++) addToCart(product, note);
     },
     [addToCart]
   );

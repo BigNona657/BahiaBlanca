@@ -37,6 +37,9 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove }: Prop
         <p className="text-xs text-gray-400">
           ${parseFloat(product.price).toLocaleString("es-AR")} c/u
         </p>
+        {item.note && (
+          <p className="text-xs text-brand-500 mt-0.5 leading-snug">{item.note}</p>
+        )}
 
         {/* Controles de cantidad */}
         <div className="flex items-center gap-2 mt-1.5">

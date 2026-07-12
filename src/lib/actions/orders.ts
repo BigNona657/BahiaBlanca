@@ -164,8 +164,8 @@ export async function createOrder(
 
     for (const item of items) {
       await sql`
-        INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-        VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${parseFloat(item.product.price)})
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, note)
+        VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${parseFloat(item.product.price)}, ${item.note ?? null})
       `;
     }
 

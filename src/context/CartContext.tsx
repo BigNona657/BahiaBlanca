@@ -16,6 +16,7 @@ import type { Product } from "@/types/menu";
 export type CartItem = {
   product: Product;
   quantity: number;
+  note?: string;
 };
 
 type CartState = {
@@ -23,7 +24,7 @@ type CartState = {
 };
 
 type CartAction =
-  | { type: "ADD"; product: Product }
+  | { type: "ADD"; product: Product; note?: string }
   | { type: "REMOVE"; productId: number }
   | { type: "DECREMENT"; productId: number }
   | { type: "CLEAR" }
@@ -33,7 +34,7 @@ type CartContextValue = {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, note?: string) => void;
   removeFromCart: (productId: number) => void;
   decrementFromCart: (productId: number) => void;
   clearCart: () => void;
@@ -44,17 +45,19 @@ type CartContextValue = {
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "ADD": {
-      const existing = state.items.find((i) => i.product.id === action.product.id);
+      const existing = state.items.find(
+        (i) => i.product.id === action.product.id && i.note === action.note
+      );
       if (existing) {
         return {
           items: state.items.map((i) =>
-            i.product.id === action.product.id
+            i.product.id === action.product.id && i.note === action.note
               ? { ...i, quantity: i.quantity + 1 }
               : i
           ),
         };
       }
-      return { items: [...state.items, { product: action.product, quantity: 1 }] };
+      return { items: [...state.items, { product: action.product, quantity: 1, note: action.note }] };
     }
 
     case "DECREMENT": {
@@ -112,8 +115,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = useCallback((product: Product) => {
-    dispatch({ type: "ADD", product });
+  const addToCart = useCallback((product: Product, note?: string) => {
+    dispatch({ type: "ADD", product, note });
   }, []);
 
   const removeFromCart = useCallback((productId: number) => {
