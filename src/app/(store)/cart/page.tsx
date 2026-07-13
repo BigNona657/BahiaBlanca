@@ -9,15 +9,17 @@ import CartItemRow from "@/components/store/CartItemRow";
 import { createOrder, type CheckoutFormData } from "@/lib/actions/orders";
 
 const ALIAS = "big-nona";
+const TAKEAWAY_ADDRESS = "Fatone 657";
 
 const INITIAL_FORM: CheckoutFormData = {
   customerName: "",
   phone: "",
+  deliveryType: "DELIVERY",
   street: "",
   streetNumber: "",
   apartment: "",
   notes: "",
-  paymentMethod: "CASH",
+  paymentMethod: "TRANSFER",
 };
 
 export default function CartPage() {
@@ -33,10 +35,21 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
 
+  const isDelivery = form.deliveryType === "DELIVERY";
+
   function handleField(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
+    setForm((prev) => ({
+      ...prev,
+      deliveryType: type,
+      // Delivery solo permite transferencia; takeaway permite ambos
+      paymentMethod: type === "DELIVERY" ? "TRANSFER" : prev.paymentMethod,
+    }));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -91,9 +104,9 @@ export default function CartPage() {
           <div className="bg-white rounded-2xl shadow-sm p-4">
             {items.map((item) => (
               <CartItemRow
-                key={item.product.id}
+                key={`${item.product.id}-${item.note ?? ""}`}
                 item={item}
-                onAdd={() => addToCart(item.product)}
+                onAdd={() => addToCart(item.product, item.note)}
                 onDecrement={() => decrementFromCart(item.product.id)}
                 onRemove={() => removeFromCart(item.product.id)}
               />
@@ -121,11 +134,44 @@ export default function CartPage() {
 
         {/* ── Columna derecha: formulario checkout ── */}
         <div className="lg:w-96">
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white rounded-2xl shadow-sm p-4 space-y-4"
-          >
-            <h2 className="text-base font-bold text-gray-700">Datos de entrega</h2>
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+
+            {/* ── Selector delivery / takeaway ── */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Tipo de entrega *</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDeliveryType("DELIVERY")}
+                  className={`rounded-2xl py-3 px-3 text-sm font-semibold border-2 transition flex flex-col items-center gap-1 ${
+                    isDelivery
+                      ? "border-brand-500 bg-brand-50 text-brand-600"
+                      : "border-gray-200 text-gray-600 hover:border-brand-300"
+                  }`}
+                >
+                  <span className="text-xl">🛵</span>
+                  <span>Delivery</span>
+                  <span className="text-xs font-normal opacity-70">Solo transferencia</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeliveryType("TAKEAWAY")}
+                  className={`rounded-2xl py-3 px-3 text-sm font-semibold border-2 transition flex flex-col items-center gap-1 ${
+                    !isDelivery
+                      ? "border-brand-500 bg-brand-50 text-brand-600"
+                      : "border-gray-200 text-gray-600 hover:border-brand-300"
+                  }`}
+                >
+                  <span className="text-xl">🏪</span>
+                  <span>Take away</span>
+                  <span className="text-xs font-normal opacity-70">{TAKEAWAY_ADDRESS}</span>
+                </button>
+              </div>
+            </div>
+
+            <h2 className="text-base font-bold text-gray-700">
+              {isDelivery ? "Datos de entrega" : "Tus datos"}
+            </h2>
 
             {/* Nombre — solo si no hay sesión */}
             {!session && (
@@ -154,64 +200,83 @@ export default function CartPage() {
               />
             </Field>
 
-            {/* Dirección */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2">
-                <Field label="Calle *">
+            {/* Dirección — solo delivery */}
+            {isDelivery && (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Field label="Calle *">
+                      <input
+                        name="street"
+                        required
+                        placeholder="Av. Corrientes"
+                        value={form.street}
+                        onChange={handleField}
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Número *">
+                    <input
+                      name="streetNumber"
+                      required
+                      placeholder="1234"
+                      value={form.streetNumber}
+                      onChange={handleField}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Piso / Depto">
                   <input
-                    name="street"
-                    required
-                    placeholder="Av. Corrientes"
-                    value={form.street}
+                    name="apartment"
+                    placeholder="3° B"
+                    value={form.apartment}
                     onChange={handleField}
                     className={inputCls}
                   />
                 </Field>
+
+                <Field label="Aclaraciones para el repartidor">
+                  <textarea
+                    name="notes"
+                    rows={2}
+                    placeholder="Timbre roto, llamar al llegar..."
+                    value={form.notes}
+                    onChange={handleField}
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+              </>
+            )}
+
+            {/* Take away: info de retiro */}
+            {!isDelivery && (
+              <div className="bg-brand-50 border border-brand-100 rounded-2xl px-4 py-3 text-sm text-brand-700">
+                <p className="font-semibold mb-0.5">📍 Punto de retiro</p>
+                <p>{TAKEAWAY_ADDRESS}</p>
               </div>
-              <Field label="Número *">
-                <input
-                  name="streetNumber"
-                  required
-                  placeholder="1234"
-                  value={form.streetNumber}
-                  onChange={handleField}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-
-            <Field label="Piso / Depto">
-              <input
-                name="apartment"
-                placeholder="3° B"
-                value={form.apartment}
-                onChange={handleField}
-                className={inputCls}
-              />
-            </Field>
-
-            <Field label="Aclaraciones para el repartidor">
-              <textarea
-                name="notes"
-                rows={2}
-                placeholder="Timbre roto, llamar al llegar..."
-                value={form.notes}
-                onChange={handleField}
-                className={`${inputCls} resize-none`}
-              />
-            </Field>
+            )}
 
             {/* Método de pago */}
             <Field label="Método de pago *">
-              <select
-                name="paymentMethod"
-                value={form.paymentMethod}
-                onChange={handleField}
-                className={inputCls}
-              >
-                <option value="CASH">💵 Efectivo contra entrega</option>
-                <option value="TRANSFER">🏦 Transferencia bancaria</option>
-              </select>
+              {isDelivery ? (
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-600">
+                  <span>🏦</span>
+                  <span>Transferencia bancaria</span>
+                </div>
+              ) : (
+                <select
+                  name="paymentMethod"
+                  value={form.paymentMethod}
+                  onChange={handleField}
+                  className={inputCls}
+                >
+                  <option value="TRANSFER">🏦 Transferencia bancaria</option>
+                  <option value="CASH">💵 Efectivo en el local</option>
+                </select>
+              )}
             </Field>
 
             {/* Error */}
@@ -241,7 +306,6 @@ export default function CartPage() {
               <p className="text-sm text-gray-500 mt-1">Realizá la transferencia antes de confirmar el pedido.</p>
             </div>
 
-            {/* Alias */}
             <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-gray-400">Alias</p>
@@ -255,7 +319,6 @@ export default function CartPage() {
               </button>
             </div>
 
-            {/* Monto */}
             <div className="bg-brand-50 rounded-2xl px-4 py-3 flex items-center justify-between">
               <p className="text-sm text-gray-500">Monto a transferir</p>
               <p className="text-xl font-bold text-brand-600">

@@ -10,6 +10,7 @@ import type { CartItem } from "@/context/CartContext";
 export type CheckoutFormData = {
   customerName: string;
   phone: string;
+  deliveryType: "DELIVERY" | "TAKEAWAY";
   street: string;
   streetNumber: string;
   apartment: string;
@@ -123,13 +124,15 @@ export async function createOrder(
 
   const session = await getServerSession(authOptions);
 
-  const deliveryAddress = [
-    `${formData.street} ${formData.streetNumber}`.trim(),
-    formData.apartment ? `Piso/Depto: ${formData.apartment}` : null,
-    formData.notes ? `Aclaraciones: ${formData.notes}` : null,
-  ]
-    .filter(Boolean)
-    .join(" | ");
+  const deliveryAddress = formData.deliveryType === "TAKEAWAY"
+    ? "Take away · Fatone 657"
+    : [
+        `${formData.street} ${formData.streetNumber}`.trim(),
+        formData.apartment ? `Piso/Depto: ${formData.apartment}` : null,
+        formData.notes ? `Aclaraciones: ${formData.notes}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
   const subtotal = items.reduce(
     (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
