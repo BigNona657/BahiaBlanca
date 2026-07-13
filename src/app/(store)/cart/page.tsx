@@ -127,10 +127,12 @@ export default function CartPage() {
                 <span>Subtotal ({totalItems} {totalItems === 1 ? "ítem" : "ítems"})</span>
                 <span>${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>Envío</span>
-                <span className="text-green-600 font-medium">Gratis</span>
-              </div>
+              {isDelivery && (
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>Envío</span>
+                  <span className="text-orange-500 font-medium">A pagar al repartidor</span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-bold text-gray-800 pt-1">
                 <span>Total</span>
                 <span className="text-brand-600">
@@ -301,6 +303,12 @@ export default function CartPage() {
             >
               {isPending ? "Confirmando pedido..." : `Confirmar pedido · $${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`}
             </button>
+
+            {isDelivery && (
+              <p className="text-xs text-center text-gray-400 leading-snug">
+                🛵 Los envíos se realizan a través de <span className="font-semibold text-gray-500">Uber Envíos</span>. El costo del envío será abonado por el cliente al momento de la entrega.
+              </p>
+            )}
           </form>
         </div>
       </div>
