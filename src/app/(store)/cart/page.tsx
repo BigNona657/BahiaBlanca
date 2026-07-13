@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -34,6 +34,9 @@ export default function CartPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const isDelivery = form.deliveryType === "DELIVERY";
 
@@ -75,20 +78,26 @@ export default function CartPage() {
   }
 
   // ── Carrito vacío ──────────────────────────────────────────────────────────
-  if (totalItems === 0) {
+  if (!mounted || totalItems === 0) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center gap-4">
-        <span className="text-7xl">🛒</span>
-        <h2 className="text-xl font-bold text-gray-700">Tu carrito está vacío</h2>
-        <p className="text-gray-400 text-sm">
-          Todavía no agregaste nada. ¡Mirá el menú y elegí lo que se te antoje!
-        </p>
-        <Link
-          href="/"
-          className="mt-2 bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-semibold transition"
-        >
-          Ver el menú
-        </Link>
+        {!mounted ? (
+          <span className="text-4xl animate-pulse">🛒</span>
+        ) : (
+          <>
+            <span className="text-7xl">🛒</span>
+            <h2 className="text-xl font-bold text-gray-700">Tu carrito está vacío</h2>
+            <p className="text-gray-400 text-sm">
+              Todavía no agregaste nada. ¡Mirá el menú y elegí lo que se te antoje!
+            </p>
+            <Link
+              href="/"
+              className="mt-2 bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-semibold transition"
+            >
+              Ver el menú
+            </Link>
+          </>
+        )}
       </div>
     );
   }

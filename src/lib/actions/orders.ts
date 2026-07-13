@@ -123,6 +123,7 @@ export async function createOrder(
   if (!items.length) return { success: false, error: "El carrito está vacío." };
 
   const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "Debés iniciar sesión para hacer un pedido." };
 
   const deliveryAddress = formData.deliveryType === "TAKEAWAY"
     ? "Take away · Fatone 657"
@@ -134,40 +135,36 @@ export async function createOrder(
         .filter(Boolean)
         .join(" | ");
 
+  if (!deliveryAddress.trim()) return { success: false, error: "Ingresá una dirección de entrega." };
+  if (!formData.phone.trim()) return { success: false, error: "Ingresá un teléfono de contacto." };
+
+  const dailyItems = items.filter((i) => i.product.id === -1);
+  const regularItems = items.filter((i) => i.product.id !== -1);
+
   const subtotal = items.reduce(
     (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
     0
   );
   const total = subtotal;
 
-  try {
-    let userId: string;
+  // Armar nota con los ítems del menú del día
+  const dailyNote = dailyItems.length
+    ? dailyItems
+        .map((i) => `${i.quantity}x ${i.product.name}`)
+        .join(", ")
+    : null;
 
-    if (session?.user?.id) {
-      userId = session.user.id;
-    } else {
-      const guestEmail = `guest_${formData.phone.replace(/\D/g, "")}@bignona.guest`;
-      const existing = await sql`SELECT id FROM users WHERE email = ${guestEmail} LIMIT 1`;
-      if (existing.length > 0) {
-        userId = existing[0].id as string;
-      } else {
-        const created = await sql`
-          INSERT INTO users (name, email, role)
-          VALUES (${formData.customerName}, ${guestEmail}, 'CLIENT')
-          RETURNING id
-        `;
-        userId = created[0].id as string;
-      }
-    }
+  try {
+    const userId = session.user.id;
 
     const orderRows = await sql`
-      INSERT INTO orders (user_id, status, payment_method, delivery_address, phone, subtotal, delivery_fee, total)
-      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total})
+      INSERT INTO orders (user_id, status, payment_method, delivery_address, phone, subtotal, delivery_fee, total, notes)
+      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total}, ${dailyNote})
       RETURNING id
     `;
     const orderId = orderRows[0].id as number;
 
-    for (const item of items) {
+    for (const item of regularItems) {
       await sql`
         INSERT INTO order_items (order_id, product_id, quantity, unit_price, note)
         VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${parseFloat(item.product.price)}, ${item.note ?? null})
@@ -176,7 +173,8 @@ export async function createOrder(
 
     return { success: true, orderId };
   } catch (err) {
-    console.error("[createOrder]", err);
-    return { success: false, error: "No se pudo guardar el pedido. Intentá de nuevo." };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[createOrder] ERROR:", msg);
+    return { success: false, error: `Error: ${msg}` };
   }
 }

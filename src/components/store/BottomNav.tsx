@@ -3,14 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useEffect, useState } from "react";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { totalItems } = useCart();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const badge = mounted ? totalItems : 0;
 
   const links = [
     { href: "/",       label: "Menú",    icon: "🍽️", badge: 0 },
-    { href: "/cart",   label: "Carrito", icon: "🛒",  badge: totalItems },
+    { href: "/cart",   label: "Carrito", icon: "🛒",  badge },
     { href: "/orders", label: "Pedidos", icon: "📦",  badge: 0 },
   ];
 
