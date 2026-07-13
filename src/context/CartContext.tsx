@@ -5,6 +5,7 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useRef,
   useCallback,
   useMemo,
   type ReactNode,
@@ -94,6 +95,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const hydrated = useRef(false);
 
   // Hidratación desde localStorage (solo en cliente)
   useEffect(() => {
@@ -107,11 +109,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       // localStorage corrupto: ignorar
+    } finally {
+      hydrated.current = true;
     }
   }, []);
 
-  // Persistir en localStorage cada vez que cambia el carrito
+  // Persistir en localStorage solo después de hidratar
   useEffect(() => {
+    if (!hydrated.current) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
