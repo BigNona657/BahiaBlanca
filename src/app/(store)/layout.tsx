@@ -13,7 +13,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
       {/* Botón flotante de WhatsApp */}
       <a
-        href="https://wa.me/542914648646"
+        href="https://wa.me/542914384316"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Contactar por WhatsApp"

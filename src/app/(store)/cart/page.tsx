@@ -162,7 +162,7 @@ export default function CartPage() {
                 >
                   <span className="text-xl">🛵</span>
                   <span>Delivery</span>
-                  <span className="text-xs font-normal opacity-70">por Uber Envíos</span>
+                  <span className="text-xs font-semibold text-orange-500">por Uber Envíos</span>
                   <span className="text-xs font-normal opacity-70">Solo transferencia</span>
                 </button>
                 <button
