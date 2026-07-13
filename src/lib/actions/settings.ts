@@ -22,6 +22,14 @@ export type IceCreamPote = {
   price: number;
 };
 
+export type DailyMenu = {
+  title: string;
+  description: string;
+  price: number;
+  image_data: string;
+  active: boolean;
+};
+
 const DEFAULT_POTES: IceCreamPote[] = [
   { label: "Pote 1 kg",  value: "1kg",   price: 0 },
   { label: "Pote ½ kg", value: "1/2kg", price: 0 },
@@ -111,6 +119,34 @@ export async function saveIceCreamPotes(
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo guardar los precios." };
+  }
+}
+
+export async function getDailyMenu(): Promise<DailyMenu | null> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'daily_menu' LIMIT 1`;
+  if (!rows.length) return null;
+  try {
+    return JSON.parse(rows[0].value as string) as DailyMenu;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveDailyMenu(
+  menu: DailyMenu
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(menu);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('daily_menu', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar el menú del día." };
   }
 }
 
