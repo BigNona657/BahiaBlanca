@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getClientOrderDetail } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
 import OrderStatusTracker from "@/components/store/OrderStatusTracker";
+import OrderChat from "@/components/store/OrderChat";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -130,6 +131,13 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
         <InfoRow icon="📍" label="Dirección" value={order.delivery_address.replace(/ \| /g, "\n")} />
         <InfoRow icon="💳" label="Pago" value={PAYMENT_LABEL[order.payment_method]} />
       </div>
+
+      {/* Chat */}
+      <OrderChat
+        orderId={order.id}
+        orderCreatedAt={order.created_at}
+        senderRole="client"
+      />
 
       {/* CTA */}
       <Link

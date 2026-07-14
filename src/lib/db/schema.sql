@@ -138,6 +138,19 @@ CREATE INDEX idx_orders_status          ON orders(status);
 CREATE INDEX idx_order_items_order_id   ON order_items(order_id);
 
 -- ------------------------------------------------------------
+-- Mensajes de chat por pedido (expiran a los 45 min)
+-- ------------------------------------------------------------
+CREATE TABLE order_messages (
+  id         SERIAL      PRIMARY KEY,
+  order_id   INT         NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  sender     TEXT        NOT NULL CHECK (sender IN ('client', 'admin')),
+  text       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_order_messages_order_id ON order_messages(order_id);
+
+-- ------------------------------------------------------------
 -- Seed: categorías iniciales
 -- ------------------------------------------------------------
 INSERT INTO categories (name, slug, sort_order) VALUES
