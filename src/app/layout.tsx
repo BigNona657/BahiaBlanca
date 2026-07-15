@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import Providers from "@/components/ui/Providers";
 import PWAInstallBanner from "@/components/ui/PWAInstallBanner";
 import "./globals.css";
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
         <PWAInstallBanner />
+        <Analytics />
       </body>
     </html>
   );
