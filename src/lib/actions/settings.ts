@@ -150,6 +150,34 @@ export async function saveDailyMenu(
   }
 }
 
+export async function getImperdibles(): Promise<number[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'imperdibles' LIMIT 1`;
+  if (!rows.length) return [];
+  try {
+    return JSON.parse(rows[0].value as string) as number[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveImperdibles(
+  ids: number[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(ids);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('imperdibles', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los imperdibles." };
+  }
+}
+
 export async function saveAppSettings(
   data: Partial<AppSettings>
 ): Promise<{ success: boolean; error?: string }> {

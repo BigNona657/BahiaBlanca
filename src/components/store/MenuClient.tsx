@@ -8,19 +8,26 @@ import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import ProductCard from "./ProductCard";
 import ProductModal from "./ProductModal";
+import ImperdiblesCarousel from "./ImperdiblesCarousel";
 
 type Props = {
   categories: Category[];
   products: Product[];
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
+  imperdiblesIds: number[];
 };
 
-export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes }: Props) {
+export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdiblesIds }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+
+  const imperdibles = useMemo(
+    () => imperdiblesIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as Product[],
+    [imperdiblesIds, products]
+  );
 
   const filtered = useMemo(
     () =>
@@ -39,6 +46,10 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
 
   return (
     <div className="flex flex-col gap-4">
+      {imperdibles.length > 0 && (
+        <ImperdiblesCarousel products={imperdibles} onOpen={setActiveProduct} />
+      )}
+
       <CategoryFilter
         categories={categories}
         selected={selectedCategory}

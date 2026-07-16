@@ -1,17 +1,18 @@
 import { getCategories, getProductsByCategory } from "@/lib/actions/menu";
-import { getIceCreamFlavors, getIceCreamPotes, getDailyMenu } from "@/lib/actions/settings";
+import { getIceCreamFlavors, getIceCreamPotes, getDailyMenu, getImperdibles } from "@/lib/actions/settings";
 import MenuClient from "@/components/store/MenuClient";
 import DailyMenuCard from "@/components/store/DailyMenuCard";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [categories, products, iceCreamFlavors, iceCreamPotes, dailyMenu] = await Promise.all([
+  const [categories, products, iceCreamFlavors, iceCreamPotes, dailyMenu, imperdiblesIds] = await Promise.all([
     getCategories(),
     getProductsByCategory(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
     getDailyMenu(),
+    getImperdibles(),
   ]);
 
   return (
@@ -37,7 +38,7 @@ export default async function HomePage() {
       {/* Menú del día */}
       {dailyMenu?.active && <DailyMenuCard menu={dailyMenu} />}
 
-      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} />
+      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} imperdiblesIds={imperdiblesIds} />
     </div>
   );
 }
