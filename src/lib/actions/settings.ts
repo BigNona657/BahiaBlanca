@@ -33,7 +33,7 @@ export type DailyMenuItem = {
 // Legacy — se mantiene para compatibilidad con DailyMenuCard
 export type DailyMenu = DailyMenuItem & { day?: number };
 
-export const DAYS_OF_WEEK = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const DAYS_OF_WEEK = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 const EMPTY_MENU_ITEM: DailyMenuItem = { title: "", description: "", price: 0, image_data: "", active: false };
 

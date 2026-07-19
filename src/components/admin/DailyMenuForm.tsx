@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
-import { saveDailyMenus, type DailyMenuItem, DAYS_OF_WEEK } from "@/lib/actions/settings";
+import { saveDailyMenus, type DailyMenuItem } from "@/lib/actions/settings";
+import { DAYS_OF_WEEK } from "@/lib/constants";
 
 const EMPTY: DailyMenuItem = { title: "", description: "", price: 0, image_data: "", active: false };
 
