@@ -1,4 +1,4 @@
-import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenu, getImperdibles } from "@/lib/actions/settings";
+import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles } from "@/lib/actions/settings";
 import { getProductsByCategory } from "@/lib/actions/menu";
 import SettingsForm from "@/components/admin/SettingsForm";
 import IceCreamFlavorsForm from "@/components/admin/IceCreamFlavorsForm";
@@ -9,11 +9,11 @@ import ImperdiblesForm from "@/components/admin/ImperdiblesForm";
 export const revalidate = 0;
 
 export default async function AdminSettingsPage() {
-  const [settings, flavors, potes, dailyMenu, imperdibles, products] = await Promise.all([
+  const [settings, flavors, potes, dailyMenus, imperdibles, products] = await Promise.all([
     getAppSettings(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
-    getDailyMenu(),
+    getDailyMenus(),
     getImperdibles(),
     getProductsByCategory(),
   ]);
@@ -32,7 +32,7 @@ export default async function AdminSettingsPage() {
       <div className="bg-white rounded-2xl shadow-sm p-5">
         <h2 className="text-base font-bold text-gray-700 mb-1">Menú del día 🍽️</h2>
         <p className="text-xs text-gray-400 mb-4">Se muestra destacado en la parte superior del menú.</p>
-        <DailyMenuForm initial={dailyMenu} />
+        <DailyMenuForm initial={dailyMenus} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-5">

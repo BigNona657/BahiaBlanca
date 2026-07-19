@@ -22,13 +22,20 @@ export type IceCreamPote = {
   price: number;
 };
 
-export type DailyMenu = {
+export type DailyMenuItem = {
   title: string;
   description: string;
   price: number;
   image_data: string;
   active: boolean;
 };
+
+// Legacy — se mantiene para compatibilidad con DailyMenuCard
+export type DailyMenu = DailyMenuItem & { day?: number };
+
+export const DAYS_OF_WEEK = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+const EMPTY_MENU_ITEM: DailyMenuItem = { title: "", description: "", price: 0, image_data: "", active: false };
 
 const DEFAULT_POTES: IceCreamPote[] = [
   { label: "Pote 1 kg",  value: "1kg",   price: 0 },
@@ -122,32 +129,61 @@ export async function saveIceCreamPotes(
   }
 }
 
-export async function getDailyMenu(): Promise<DailyMenu | null> {
-  const rows = await sql`SELECT value FROM app_settings WHERE key = 'daily_menu' LIMIT 1`;
-  if (!rows.length) return null;
-  try {
-    return JSON.parse(rows[0].value as string) as DailyMenu;
-  } catch {
-    return null;
+export async function getDailyMenus(): Promise<DailyMenuItem[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'daily_menus' LIMIT 1`;
+  if (rows.length) {
+    try {
+      return JSON.parse(rows[0].value as string) as DailyMenuItem[];
+    } catch {}
   }
+  // Migrar formato viejo si existe
+  const old = await sql`SELECT value FROM app_settings WHERE key = 'daily_menu' LIMIT 1`;
+  if (old.length) {
+    try {
+      const parsed = JSON.parse(old[0].value as string) as DailyMenu;
+      const menus = Array.from({ length: 7 }, () => ({ ...EMPTY_MENU_ITEM }));
+      const today = new Date().getDay();
+      menus[today] = { title: parsed.title, description: parsed.description, price: parsed.price, image_data: parsed.image_data, active: parsed.active };
+      return menus;
+    } catch {}
+  }
+  return Array.from({ length: 7 }, () => ({ ...EMPTY_MENU_ITEM }));
 }
 
-export async function saveDailyMenu(
-  menu: DailyMenu
+export async function getDailyMenu(): Promise<DailyMenu | null> {
+  const menus = await getDailyMenus();
+  const today = new Date().getDay();
+  const menu = menus[today];
+  if (!menu || !menu.active || !menu.title) return null;
+  return { ...menu, day: today };
+}
+
+export async function saveDailyMenus(
+  menus: DailyMenuItem[]
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
   try {
-    const value = JSON.stringify(menu);
+    const value = JSON.stringify(menus);
     await sql`
-      INSERT INTO app_settings (key, value) VALUES ('daily_menu', ${value})
+      INSERT INTO app_settings (key, value) VALUES ('daily_menus', ${value})
       ON CONFLICT (key) DO UPDATE SET value = ${value}
     `;
     revalidatePath("/");
     return { success: true };
   } catch {
-    return { success: false, error: "No se pudo guardar el menú del día." };
+    return { success: false, error: "No se pudo guardar los menús." };
   }
+}
+
+/** @deprecated usar getDailyMenus / saveDailyMenus */
+export async function saveDailyMenu(
+  menu: DailyMenu
+): Promise<{ success: boolean; error?: string }> {
+  const menus = await getDailyMenus();
+  const today = new Date().getDay();
+  menus[today] = { title: menu.title, description: menu.description, price: menu.price, image_data: menu.image_data, active: menu.active };
+  return saveDailyMenus(menus);
 }
 
 export async function getImperdibles(): Promise<number[]> {
