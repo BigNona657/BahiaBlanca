@@ -41,7 +41,16 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           {logoData ? (
-            <Image src={logoData} alt={businessName} width={logoSize} height={logoSize} className="object-contain rounded-full" style={{ width: logoSize, height: logoSize }} />
+            <Image
+              src={logoData}
+              alt={`Logo ${businessName}`}
+              width={logoSize}
+              height={logoSize}
+              className="object-contain rounded-full"
+              style={{ width: logoSize, height: logoSize }}
+              unoptimized={logoData.startsWith("data:")}
+              priority
+            />
           ) : null}
           <span className="text-xl font-bold text-brand-600">{businessName}</span>
         </Link>

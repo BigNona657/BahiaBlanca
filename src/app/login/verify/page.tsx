@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Verificá tu email",
+  robots: { index: false, follow: false },
+};
+
 export default function VerifyPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-50 px-4">

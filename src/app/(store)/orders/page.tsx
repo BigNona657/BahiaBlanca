@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getClientOrders } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
 
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Mis pedidos",
+  description: "Seguí el estado de tus pedidos en BigNona.",
+  robots: { index: false, follow: false },
+};
 
 const PAYMENT_LABEL = { CASH: "💵 Efectivo", TRANSFER: "🏦 Transferencia" };
 

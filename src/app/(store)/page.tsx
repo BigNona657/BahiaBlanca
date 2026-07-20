@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import { getCategories, getProductsByCategory } from "@/lib/actions/menu";
 import { getIceCreamFlavors, getIceCreamPotes, getDailyMenu, getImperdibles } from "@/lib/actions/settings";
 import MenuClient from "@/components/store/MenuClient";
 import DailyMenuCard from "@/components/store/DailyMenuCard";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Menú | BigNona Delivery",
+  description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657. Helados artesanales, menú del día y más.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "BigNona — Comida casera a domicilio",
+    description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657.",
+    url: "/",
+  },
+};
 
 export default async function HomePage() {
   const [categories, products, iceCreamFlavors, iceCreamPotes, dailyMenu, imperdibles] = await Promise.all([
@@ -15,8 +27,32 @@ export default async function HomePage() {
     getImperdibles(),
   ]);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FoodEstablishment",
+    name: "BigNona",
+    description: "Comida casera a domicilio en Bahía Blanca. Delivery y take away.",
+    url: "https://big-nona.com.ar",
+    telephone: "+542914384316",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Fatone 657",
+      addressLocality: "Bahía Blanca",
+      addressRegion: "Buenos Aires",
+      addressCountry: "AR",
+    },
+    servesCuisine: ["Comida casera", "Helados artesanales"],
+    hasMenu: "https://big-nona.com.ar",
+    priceRange: "$$",
+    openingHours: "Mo-Sa 11:00-22:00",
+  };
+
   return (
     <div className="max-w-5xl mx-auto py-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <div className="px-4 mb-5">
         <p className="text-xs text-brand-500 font-medium mb-1">

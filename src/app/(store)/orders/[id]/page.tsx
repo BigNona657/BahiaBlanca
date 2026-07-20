@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getClientOrderDetail } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -7,6 +8,11 @@ import OrderChat from "@/components/store/OrderChat";
 type Props = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ new?: string }>;
+};
+
+export const metadata: Metadata = {
+  title: "Detalle de pedido",
+  robots: { index: false, follow: false },
 };
 
 const PAYMENT_LABEL = { CASH: "💵 Efectivo contra entrega", TRANSFER: "🏦 Transferencia bancaria" };

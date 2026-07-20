@@ -7,20 +7,50 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
+const SITE_URL = "https://big-nona.com.ar";
+const SITE_NAME = "BigNona Delivery";
+const SITE_DESCRIPTION = "Pedí la mejor comida casera a domicilio en Bahía Blanca. Delivery y take away. Rápido, fácil y rico.";
+
 export const metadata: Metadata = {
-  title: "BigNona Delivery",
-  description: "Pedí la mejor comida casera a domicilio. Rápido, fácil y rico.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
   manifest: "/manifest.json",
+  verification: {
+    google: "JkOIVr3gslXJ0ngpS55sLuTwiSlppRgvaEcksD9stIo",
+  },
+  alternates: {
+    canonical: SITE_URL,
+    languages: { "es-AR": SITE_URL },
+  },
+  keywords: ["delivery", "comida casera", "Bahía Blanca", "pedidos online", "take away", "helados", "BigNona"],
+  authors: [{ name: "BigNona" }],
+  creator: "BigNona",
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "BigNona Delivery" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "BigNona",
     startupImage: [
-      // iPhone 14 Pro Max
       { url: "/splash/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" },
-      // iPhone 14 / 13 / 12
       { url: "/splash/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" },
-      // iPhone SE
       { url: "/splash/splash-750x1334.png",  media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" },
     ],
   },

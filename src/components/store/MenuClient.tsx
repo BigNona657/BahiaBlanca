@@ -58,8 +58,8 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} onOpen={setActiveProduct} />
+          {filtered.map((product, i) => (
+            <ProductCard key={product.id} product={product} onOpen={setActiveProduct} priority={i < 4} />
           ))}
         </div>
       )}

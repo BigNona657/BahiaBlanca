@@ -55,7 +55,7 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
             >
               <div className="relative w-full aspect-square bg-gray-100">
                 {item.image_data ? (
-                  <Image src={item.image_data} alt={item.title} fill sizes="176px" className="object-cover" />
+                  <Image src={item.image_data} alt={item.title} fill sizes="176px" className="object-cover" priority={i < 2} loading={i < 2 ? undefined : "lazy"} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
                 )}

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /cart
+Disallow: /orders
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://big-nona.com.ar/sitemap.xml

@@ -6,9 +6,10 @@ import type { Product } from "@/types/menu";
 type Props = {
   product: Product;
   onOpen: (product: Product) => void;
+  priority?: boolean;
 };
 
-export default function ProductCard({ product, onOpen }: Props) {
+export default function ProductCard({ product, onOpen, priority = false }: Props) {
   const price = parseFloat(product.price);
 
   return (
@@ -24,6 +25,8 @@ export default function ProductCard({ product, onOpen }: Props) {
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover"
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl">
