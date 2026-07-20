@@ -19,6 +19,7 @@ const EMPTY: ProductFormData = {
   image_url: "",
   image_data: null,
   available: true,
+  stock: null,
 };
 
 export default function ProductForm({ categories, initial }: Props) {
@@ -193,6 +194,25 @@ export default function ProductForm({ categories, initial }: Props) {
           </select>
         </Field>
       </div>
+
+      {/* Stock */}
+      <Field label="Stock (opcional — sin límite si está vacío)">
+        <input
+          name="stock"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="Sin límite"
+          value={form.stock ?? ""}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              stock: e.target.value === "" ? null : parseInt(e.target.value),
+            }))
+          }
+          className={inputCls}
+        />
+      </Field>
 
       {/* Imagen */}
       <Field label="Imagen del producto">

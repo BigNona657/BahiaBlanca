@@ -37,6 +37,7 @@ export type ProductFormData = {
   image_url: string;
   image_data?: string | null;
   available: boolean;
+  stock?: number | null;
 };
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
   const rows = await sql`
     SELECT
       p.id, p.category_id, p.name, p.slug, p.description,
-      p.price, p.image_url, p.image_data, p.available, p.sort_order,
+      p.price, p.image_url, p.image_data, p.available, p.sort_order, p.stock,
       c.name AS category_name
     FROM products p
     JOIN categories c ON c.id = p.category_id
@@ -154,7 +155,7 @@ export async function createProduct(
     if (isNaN(price) || price <= 0) return { success: false, error: "Precio inválido." };
 
     await sql`
-      INSERT INTO products (category_id, name, slug, description, price, image_url, image_data, available)
+      INSERT INTO products (category_id, name, slug, description, price, image_url, image_data, available, stock)
       VALUES (
         ${parseInt(data.category_id)},
         ${data.name.trim()},
@@ -163,7 +164,8 @@ export async function createProduct(
         ${price},
         ${data.image_url.trim() || null},
         ${data.image_data ?? null},
-        ${data.available}
+        ${data.available},
+        ${data.stock ?? null}
       )
     `;
 
@@ -242,6 +244,7 @@ export async function updateProduct(
         image_url    = ${data.image_url.trim() || null},
         image_data   = ${data.image_data ?? null},
         available    = ${data.available},
+        stock        = ${data.stock ?? null},
         updated_at   = NOW()
       WHERE id = ${productId}
     `;
