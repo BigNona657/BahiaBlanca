@@ -19,6 +19,9 @@ export default async function HomePage() {
     <div className="max-w-5xl mx-auto py-4">
       {/* Hero */}
       <div className="px-4 mb-5">
+        <p className="text-xs text-brand-500 font-medium mb-1">
+          Nuestras especialidades se preparan en el momento
+        </p>
         <h1 className="text-2xl font-bold text-gray-800">
           ¿Qué querés comer hoy? 🍽️
         </h1>
