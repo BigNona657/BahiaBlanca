@@ -42,7 +42,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   return (
     <div className="flex flex-col gap-4">
       {imperdibles.length > 0 && (
-        <ImperdiblesCarousel items={imperdibles} />
+        <ImperdiblesCarousel items={imperdibles} onOpen={setActiveProduct} />
       )}
 
       <CategoryFilter

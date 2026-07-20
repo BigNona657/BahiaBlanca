@@ -2,29 +2,17 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
 import type { ImperdibleItem } from "@/lib/actions/settings";
+import type { Product } from "@/types/menu";
 
 type Props = {
   items: ImperdibleItem[];
+  onOpen: (product: Product) => void;
 };
 
-export default function ImperdiblesCarousel({ items }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { addToCart } = useCart();
-  const { data: session } = useSession();
-  const router = useRouter();
-
-  if (items.length === 0) return null;
-
-  function handleAdd(item: ImperdibleItem) {
-    if (!session) {
-      router.push("/login?callbackUrl=%2F");
-      return;
-    }
-    addToCart({
+export default function ImperdiblesCarousel({ items, onOpen }: Props) {
+  function toProduct(item: ImperdibleItem): Product {
+    return {
       id: -(Math.abs(item.title.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) + 1000),
       category_id: 0,
       name: item.title,
@@ -35,8 +23,11 @@ export default function ImperdiblesCarousel({ items }: Props) {
       image_data: item.image_data || null,
       available: true,
       sort_order: 0,
-    });
+    };
   }
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="mb-6">
@@ -47,7 +38,11 @@ export default function ImperdiblesCarousel({ items }: Props) {
         style={{ scrollbarWidth: "none" }}
       >
         {items.map((item, i) => (
-          <div key={i} className="snap-start shrink-0 w-44 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div
+            key={i}
+            onClick={() => onOpen(toProduct(item))}
+            className="snap-start shrink-0 w-44 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col active:scale-95 transition-transform cursor-pointer"
+          >
             <div className="relative w-full aspect-square bg-gray-100">
               {item.image_data ? (
                 <Image src={item.image_data} alt={item.title} fill sizes="176px" className="object-cover" />
@@ -64,12 +59,9 @@ export default function ImperdiblesCarousel({ items }: Props) {
                 <span className="text-lg font-bold text-brand-600">
                   ${item.price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
                 </span>
-                <button
-                  onClick={() => handleAdd(item)}
-                  className="bg-brand-500 text-white rounded-xl px-3 py-1.5 text-sm font-semibold active:scale-95 transition-transform"
-                >
+                <span className="bg-brand-500 text-white rounded-xl px-3 py-1.5 text-sm font-semibold">
                   + Agregar
-                </button>
+                </span>
               </div>
             </div>
           </div>
