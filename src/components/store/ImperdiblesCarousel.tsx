@@ -25,6 +25,7 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
       image_data: item.image_data || null,
       available: true,
       sort_order: 0,
+      stock: item.stock,
     };
   }
 

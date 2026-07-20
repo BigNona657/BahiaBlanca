@@ -17,4 +17,5 @@ export type Product = {
   image_data: string | null;
   available: boolean;
   sort_order: number;
+  stock?: number;
 };

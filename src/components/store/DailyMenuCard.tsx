@@ -44,6 +44,7 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
       image_data: menu.image_data || null,
       available: true,
       sort_order: 0,
+      stock: menu.stock,
     };
   }
 

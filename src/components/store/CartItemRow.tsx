@@ -52,7 +52,8 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove }: Prop
           <span className="text-sm font-bold w-5 text-center">{quantity}</span>
           <button
             onClick={onAdd}
-            className="w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center text-lg leading-none hover:bg-brand-600 transition"
+            disabled={product.stock !== undefined && quantity >= product.stock}
+            className="w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center text-lg leading-none hover:bg-brand-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
             +
           </button>
