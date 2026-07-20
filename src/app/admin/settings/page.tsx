@@ -1,5 +1,4 @@
 import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles } from "@/lib/actions/settings";
-import { getProductsByCategory } from "@/lib/actions/menu";
 import SettingsForm from "@/components/admin/SettingsForm";
 import IceCreamFlavorsForm from "@/components/admin/IceCreamFlavorsForm";
 import IceCreamPotesForm from "@/components/admin/IceCreamPotesForm";
@@ -9,13 +8,12 @@ import ImperdiblesForm from "@/components/admin/ImperdiblesForm";
 export const revalidate = 0;
 
 export default async function AdminSettingsPage() {
-  const [settings, flavors, potes, dailyMenus, imperdibles, products] = await Promise.all([
+  const [settings, flavors, potes, dailyMenus, imperdibles] = await Promise.all([
     getAppSettings(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
     getDailyMenus(),
     getImperdibles(),
-    getProductsByCategory(),
   ]);
 
   return (
@@ -37,8 +35,8 @@ export default async function AdminSettingsPage() {
 
       <div className="bg-white rounded-2xl shadow-sm p-5">
         <h2 className="text-base font-bold text-gray-700 mb-1">Imperdibles 🔥</h2>
-        <p className="text-xs text-gray-400 mb-4">Seleccioná los productos que aparecen en el carrusel destacado.</p>
-        <ImperdiblesForm products={products} initial={imperdibles} />
+        <p className="text-xs text-gray-400 mb-4">Cargá los platos que aparecen en el carrusel destacado.</p>
+        <ImperdiblesForm initial={imperdibles} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-5">

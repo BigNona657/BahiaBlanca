@@ -192,23 +192,33 @@ export async function saveDailyMenu(
   return saveDailyMenus(menus);
 }
 
-export async function getImperdibles(): Promise<number[]> {
+export type ImperdibleItem = {
+  title: string;
+  description: string;
+  price: number;
+  image_data: string;
+};
+
+export async function getImperdibles(): Promise<ImperdibleItem[]> {
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'imperdibles' LIMIT 1`;
   if (!rows.length) return [];
   try {
-    return JSON.parse(rows[0].value as string) as number[];
+    const parsed = JSON.parse(rows[0].value as string);
+    // Migrar formato viejo (array de IDs numéricos)
+    if (Array.isArray(parsed) && (parsed.length === 0 || typeof parsed[0] === "number")) return [];
+    return parsed as ImperdibleItem[];
   } catch {
     return [];
   }
 }
 
 export async function saveImperdibles(
-  ids: number[]
+  items: ImperdibleItem[]
 ): Promise<{ success: boolean; error?: string }> {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
   try {
-    const value = JSON.stringify(ids);
+    const value = JSON.stringify(items);
     await sql`
       INSERT INTO app_settings (key, value) VALUES ('imperdibles', ${value})
       ON CONFLICT (key) DO UPDATE SET value = ${value}

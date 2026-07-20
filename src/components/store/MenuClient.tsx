@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
-import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote, ImperdibleItem } from "@/lib/actions/settings";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import ProductCard from "./ProductCard";
@@ -15,19 +15,14 @@ type Props = {
   products: Product[];
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
-  imperdiblesIds: number[];
+  imperdibles: ImperdibleItem[];
 };
 
-export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdiblesIds }: Props) {
+export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdibles }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
   const { data: session } = useSession();
-
-  const imperdibles = useMemo(
-    () => imperdiblesIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as Product[],
-    [imperdiblesIds, products]
-  );
 
   const filtered = useMemo(
     () =>
@@ -47,7 +42,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   return (
     <div className="flex flex-col gap-4">
       {imperdibles.length > 0 && (
-        <ImperdiblesCarousel products={imperdibles} onOpen={setActiveProduct} />
+        <ImperdiblesCarousel items={imperdibles} />
       )}
 
       <CategoryFilter

@@ -6,7 +6,7 @@ import DailyMenuCard from "@/components/store/DailyMenuCard";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [categories, products, iceCreamFlavors, iceCreamPotes, dailyMenu, imperdiblesIds] = await Promise.all([
+  const [categories, products, iceCreamFlavors, iceCreamPotes, dailyMenu, imperdibles] = await Promise.all([
     getCategories(),
     getProductsByCategory(),
     getIceCreamFlavors(),
@@ -38,7 +38,7 @@ export default async function HomePage() {
       {/* Menú del día */}
       {dailyMenu?.active && <DailyMenuCard menu={dailyMenu} />}
 
-      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} imperdiblesIds={imperdiblesIds} />
+      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} imperdibles={imperdibles} />
     </div>
   );
 }
