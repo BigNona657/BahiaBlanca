@@ -3,18 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { ImperdibleItem } from "@/lib/actions/settings";
-import { decrementImperdibleStock } from "@/lib/actions/settings";
 import type { Product } from "@/types/menu";
 
 type Props = {
   items: ImperdibleItem[];
-  onOpen: (product: Product, onAdd: () => void) => void;
+  onOpen: (product: Product) => void;
 };
 
 export default function ImperdiblesCarousel({ items, onOpen }: Props) {
-  const [stocks, setStocks] = useState<(number | undefined)[]>(
-    items.map((item) => item.stock)
-  );
+  const stocks = items.map((item) => item.stock);
 
   function toProduct(item: ImperdibleItem): Product {
     return {
@@ -36,16 +33,7 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
   function handleOpen(item: ImperdibleItem, i: number) {
     const stock = stocks[i];
     if (stock !== undefined && stock <= 0) return;
-    onOpen(toProduct(item), () => {
-      if (stock !== undefined) {
-        setStocks((prev) => {
-          const next = [...prev];
-          next[i] = Math.max(0, (next[i] ?? 0) - 1);
-          return next;
-        });
-        decrementImperdibleStock(i);
-      }
-    });
+    onOpen(toProduct(item));
   }
 
   return (

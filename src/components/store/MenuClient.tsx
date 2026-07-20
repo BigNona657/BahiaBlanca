@@ -21,7 +21,6 @@ type Props = {
 export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdibles }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
-  const [stockDecrement, setStockDecrement] = useState<(() => void) | null>(null);
   const { addToCart } = useCart();
   const { data: session } = useSession();
 
@@ -43,13 +42,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   return (
     <div className="flex flex-col gap-4">
       {imperdibles.length > 0 && (
-        <ImperdiblesCarousel
-          items={imperdibles}
-          onOpen={(product, onAdd) => {
-            setActiveProduct(product);
-            setStockDecrement(() => onAdd);
-          }}
-        />
+        <ImperdiblesCarousel items={imperdibles} onOpen={setActiveProduct} />
       )}
 
       <CategoryFilter
@@ -73,12 +66,11 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
 
       <ProductModal
         product={activeProduct}
-        onClose={() => { setActiveProduct(null); setStockDecrement(null); }}
+        onClose={() => setActiveProduct(null)}
         onAdd={handleAddWithQty}
         isAuthenticated={!!session}
         iceCreamFlavors={iceCreamFlavors}
         iceCreamPotes={iceCreamPotes}
-        onStockDecrement={stockDecrement ?? undefined}
       />
     </div>
   );

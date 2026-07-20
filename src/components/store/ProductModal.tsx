@@ -14,13 +14,12 @@ type Props = {
   isAuthenticated: boolean;
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
-  onStockDecrement?: () => void;
 };
 
 const IS_ICE_CREAM = (p: Product) =>
   p.name.toLowerCase().includes("helado");
 
-export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, onStockDecrement }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
@@ -50,7 +49,6 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       return;
     }
     onAdd(product, qty, iceCreamNote ?? undefined);
-    onStockDecrement?.();
     onClose();
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote]);
 

@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useSession } from "next-auth/react";
 import type { DailyMenu } from "@/lib/actions/settings";
-import { decrementDailyMenuStock } from "@/lib/actions/settings";
 
 const DAILY_PRODUCT_ID = -1;
 
 export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
   const [qty, setQty] = useState(1);
-  const [stock, setStock] = useState<number | undefined>(menu.stock);
-  const isAgotado = stock !== undefined && stock <= 0;
+  const isAgotado = menu.stock !== undefined && menu.stock <= 0;
   const [modalOpen, setModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
@@ -57,11 +55,6 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
     if (isAgotado) return;
     const product = buildProduct();
     for (let i = 0; i < qty; i++) addToCart(product);
-    if (stock !== undefined) {
-      const newStock = Math.max(0, stock - qty);
-      setStock(newStock);
-      decrementDailyMenuStock(menu.day ?? 0);
-    }
     setQty(1);
   }
 
@@ -118,8 +111,8 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">{menu.description}</p>
           )}
 
-          {stock !== undefined && (
-            <p className="text-xs text-gray-400 mt-1">Stock disponible: <span className={stock <= 0 ? "text-red-500 font-semibold" : "text-gray-600 font-semibold"}>{stock}</span></p>
+          {menu.stock !== undefined && (
+            <p className="text-xs text-gray-400 mt-1">Stock disponible: <span className={menu.stock <= 0 ? "text-red-500 font-semibold" : "text-gray-600 font-semibold"}>{menu.stock}</span></p>
           )}
 
           <div className="flex items-center gap-3 mt-4">

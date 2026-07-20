@@ -4,6 +4,7 @@ import { sql } from "@/lib/db/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { CartItem } from "@/context/CartContext";
+import { decrementDailyMenuStock, decrementImperdibleStock, getImperdibles } from "@/lib/actions/settings";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -169,6 +170,33 @@ export async function createOrder(
         INSERT INTO order_items (order_id, product_id, quantity, unit_price, note)
         VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${parseFloat(item.product.price)}, ${item.note ?? null})
       `;
+    }
+
+    // Descontar stock de ítems especiales
+    const today = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
+    ).getDay();
+    const imperdibles = await getImperdibles();
+
+    for (const item of specialItems) {
+      if (item.product.id === -1) {
+        // Menú del día — descontar qty veces
+        for (let i = 0; i < item.quantity; i++) {
+          await decrementDailyMenuStock(today);
+        }
+      } else {
+        // Imperdible — buscar por ID generado
+        const idx = imperdibles.findIndex(
+          (imp) =>
+            -(Math.abs(imp.title.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) + 1000) ===
+            item.product.id
+        );
+        if (idx !== -1) {
+          for (let i = 0; i < item.quantity; i++) {
+            await decrementImperdibleStock(idx);
+          }
+        }
+      }
     }
 
     return { success: true, orderId };
