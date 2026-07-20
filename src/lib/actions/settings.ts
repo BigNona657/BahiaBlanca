@@ -129,6 +129,12 @@ export async function saveIceCreamPotes(
   }
 }
 
+function getTodayArgentina(): number {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
+  ).getDay();
+}
+
 export async function getDailyMenus(): Promise<DailyMenuItem[]> {
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'daily_menus' LIMIT 1`;
   if (rows.length) {
@@ -142,7 +148,7 @@ export async function getDailyMenus(): Promise<DailyMenuItem[]> {
     try {
       const parsed = JSON.parse(old[0].value as string) as DailyMenu;
       const menus = Array.from({ length: 7 }, () => ({ ...EMPTY_MENU_ITEM }));
-      const today = new Date().getDay();
+      const today = getTodayArgentina();
       menus[today] = { title: parsed.title, description: parsed.description, price: parsed.price, image_data: parsed.image_data, active: parsed.active };
       return menus;
     } catch {}
@@ -152,7 +158,7 @@ export async function getDailyMenus(): Promise<DailyMenuItem[]> {
 
 export async function getDailyMenu(): Promise<DailyMenu | null> {
   const menus = await getDailyMenus();
-  const today = new Date().getDay();
+  const today = getTodayArgentina();
   const menu = menus[today];
   if (!menu || !menu.active || !menu.title) return null;
   return { ...menu, day: today };
@@ -181,7 +187,7 @@ export async function saveDailyMenu(
   menu: DailyMenu
 ): Promise<{ success: boolean; error?: string }> {
   const menus = await getDailyMenus();
-  const today = new Date().getDay();
+  const today = getTodayArgentina();
   menus[today] = { title: menu.title, description: menu.description, price: menu.price, image_data: menu.image_data, active: menu.active };
   return saveDailyMenus(menus);
 }

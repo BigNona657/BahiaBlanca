@@ -8,7 +8,9 @@ import { DAYS_OF_WEEK } from "@/lib/constants";
 const EMPTY: DailyMenuItem = { title: "", description: "", price: 0, image_data: "", active: false };
 
 export default function DailyMenuForm({ initial }: { initial: DailyMenuItem[] }) {
-  const todayIndex = new Date().getDay();
+  const todayIndex = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
+  ).getDay();
   const [menus, setMenus] = useState<DailyMenuItem[]>(initial);
   const [activeDay, setActiveDay] = useState(todayIndex);
   const [uploading, setUploading] = useState(false);
