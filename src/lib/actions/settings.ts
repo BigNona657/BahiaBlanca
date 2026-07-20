@@ -28,6 +28,7 @@ export type DailyMenuItem = {
   price: number;
   image_data: string;
   active: boolean;
+  stock?: number;
 };
 
 // Legacy — se mantiene para compatibilidad con DailyMenuCard
@@ -197,6 +198,7 @@ export type ImperdibleItem = {
   description: string;
   price: number;
   image_data: string;
+  stock?: number;
 };
 
 export async function getImperdibles(): Promise<ImperdibleItem[]> {
@@ -210,6 +212,38 @@ export async function getImperdibles(): Promise<ImperdibleItem[]> {
   } catch {
     return [];
   }
+}
+
+export async function decrementDailyMenuStock(
+  dayIndex: number
+): Promise<void> {
+  const menus = await getDailyMenus();
+  const menu = menus[dayIndex];
+  if (!menu || menu.stock === undefined || menu.stock <= 0) return;
+  menus[dayIndex] = { ...menu, stock: menu.stock - 1 };
+  const value = JSON.stringify(menus);
+  await sql`
+    INSERT INTO app_settings (key, value) VALUES ('daily_menus', ${value})
+    ON CONFLICT (key) DO UPDATE SET value = ${value}
+  `;
+  revalidatePath("/");
+}
+
+export async function decrementImperdibleStock(
+  index: number
+): Promise<void> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'imperdibles' LIMIT 1`;
+  if (!rows.length) return;
+  const items: ImperdibleItem[] = JSON.parse(rows[0].value as string);
+  const item = items[index];
+  if (!item || item.stock === undefined || item.stock <= 0) return;
+  items[index] = { ...item, stock: item.stock - 1 };
+  const value = JSON.stringify(items);
+  await sql`
+    INSERT INTO app_settings (key, value) VALUES ('imperdibles', ${value})
+    ON CONFLICT (key) DO UPDATE SET value = ${value}
+  `;
+  revalidatePath("/");
 }
 
 export async function saveImperdibles(

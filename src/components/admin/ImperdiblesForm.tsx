@@ -4,7 +4,7 @@ import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import { saveImperdibles, type ImperdibleItem } from "@/lib/actions/settings";
 
-const EMPTY: ImperdibleItem = { title: "", description: "", price: 0, image_data: "" };
+const EMPTY: ImperdibleItem = { title: "", description: "", price: 0, image_data: "", stock: undefined };
 
 export default function ImperdiblesForm({ initial }: { initial: ImperdibleItem[] }) {
   const [items, setItems] = useState<ImperdibleItem[]>(initial);
@@ -173,6 +173,20 @@ export default function ImperdiblesForm({ initial }: { initial: ImperdibleItem[]
               value={form.price || ""}
               onChange={(e) => updateForm({ price: parseFloat(e.target.value) || 0 })}
               placeholder="3500"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          {/* Stock */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gray-500">Stock (opcional)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={form.stock ?? ""}
+              onChange={(e) => updateForm({ stock: e.target.value === "" ? undefined : parseInt(e.target.value) })}
+              placeholder="Sin límite"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>

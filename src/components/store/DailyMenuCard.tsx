@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useSession } from "next-auth/react";
 import type { DailyMenu } from "@/lib/actions/settings";
+import { decrementDailyMenuStock } from "@/lib/actions/settings";
 
 const DAILY_PRODUCT_ID = -1;
 
 export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
   const [qty, setQty] = useState(1);
+  const [stock, setStock] = useState<number | undefined>(menu.stock);
+  const isAgotado = stock !== undefined && stock <= 0;
   const [modalOpen, setModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { data: session } = useSession();
@@ -51,12 +54,19 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
       router.push("/login?callbackUrl=%2F");
       return;
     }
+    if (isAgotado) return;
     const product = buildProduct();
     for (let i = 0; i < qty; i++) addToCart(product);
+    if (stock !== undefined) {
+      const newStock = Math.max(0, stock - qty);
+      setStock(newStock);
+      decrementDailyMenuStock(menu.day ?? 0);
+    }
     setQty(1);
   }
 
   function handleAddFromModal() {
+    if (isAgotado) return;
     handleAdd();
     setModalOpen(false);
   }
@@ -86,6 +96,14 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
             <span className="absolute bottom-3 right-3 bg-black/40 text-white text-xs px-2 py-1 rounded-full">
               🔍 Ver foto
             </span>
+            {/* Cinta agotado */}
+            {isAgotado && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-red-500/90 text-white text-sm font-bold px-6 py-2 rotate-[-20deg] shadow-lg tracking-wide">
+                  AGOTADO
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full h-32 bg-brand-50 flex items-center justify-center">
@@ -98,6 +116,10 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
           <h2 className="text-lg font-bold text-gray-900 leading-tight">{menu.title}</h2>
           {menu.description && (
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">{menu.description}</p>
+          )}
+
+          {stock !== undefined && (
+            <p className="text-xs text-gray-400 mt-1">Stock disponible: <span className={stock <= 0 ? "text-red-500 font-semibold" : "text-gray-600 font-semibold"}>{stock}</span></p>
           )}
 
           <div className="flex items-center gap-3 mt-4">
@@ -119,7 +141,8 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
 
             <button
               onClick={handleAdd}
-              className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 text-sm font-bold flex items-center justify-between px-4 transition"
+              disabled={isAgotado}
+              className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl py-3 text-sm font-bold flex items-center justify-between px-4 transition"
             >
               {session ? (
                 <>
@@ -196,7 +219,8 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
 
                   <button
                     onClick={handleAddFromModal}
-                    className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm flex items-center justify-between px-4 transition"
+                    disabled={isAgotado}
+                    className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl py-3 font-semibold text-sm flex items-center justify-between px-4 transition"
                   >
                     {session ? (
                       <>
