@@ -13,9 +13,12 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
   const [qty, setQty] = useState(1);
   const isAgotado = menu.stock !== undefined && menu.stock <= 0;
   const [modalOpen, setModalOpen] = useState(false);
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
   const { data: session } = useSession();
   const router = useRouter();
+
+  const inCart = items.find((i) => i.product.id === DAILY_PRODUCT_ID)?.quantity ?? 0;
+  const maxQty = menu.stock !== undefined ? Math.max(0, menu.stock - inCart) : Infinity;
 
   const total = menu.price * qty;
 
@@ -126,8 +129,9 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
               </button>
               <span className="w-5 text-center font-semibold text-gray-800 text-sm">{qty}</span>
               <button
-                onClick={() => setQty((q) => q + 1)}
-                className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
+                onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                disabled={qty >= maxQty}
+                className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 +
               </button>
@@ -204,8 +208,9 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
                     </button>
                     <span className="w-6 text-center font-semibold text-gray-800">{qty}</span>
                     <button
-                      onClick={() => setQty((q) => q + 1)}
-                      className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
+                      onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                      disabled={qty >= maxQty}
+                      className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
