@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
 import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
+import { useCart } from "@/context/CartContext";
 
 type Props = {
   product: Product | null;
@@ -24,10 +25,18 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
   const router = useRouter();
+  const { items } = useCart();
+
+  const inCart = product
+    ? (items.find((i) => i.product.id === product.id)?.quantity ?? 0)
+    : 0;
+  const maxQty = product?.stock !== undefined && product.stock !== null
+    ? Math.max(0, product.stock - inCart)
+    : Infinity;
 
   useEffect(() => {
     if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); }
-  }, [product]);
+  }, [product?.id]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -151,8 +160,9 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
                   </button>
                   <span className="w-6 text-center font-semibold text-gray-800">{qty}</span>
                   <button
-                    onClick={() => setQty((q) => q + 1)}
-                    className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
+                    onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                    disabled={qty >= maxQty}
+                    className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
