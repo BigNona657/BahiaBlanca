@@ -138,8 +138,8 @@ export async function createOrder(
   if (!deliveryAddress.trim()) return { success: false, error: "Ingresá una dirección de entrega." };
   if (!formData.phone.trim()) return { success: false, error: "Ingresá un teléfono de contacto." };
 
-  const dailyItems = items.filter((i) => i.product.id === -1);
-  const regularItems = items.filter((i) => i.product.id !== -1);
+  const specialItems = items.filter((i) => i.product.id < 0);
+  const regularItems = items.filter((i) => i.product.id > 0);
 
   const subtotal = items.reduce(
     (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
@@ -147,10 +147,10 @@ export async function createOrder(
   );
   const total = subtotal;
 
-  // Armar nota con los ítems del menú del día
-  const dailyNote = dailyItems.length
-    ? dailyItems
-        .map((i) => `${i.quantity}x ${i.product.name}`)
+  // Armar nota con los ítems especiales (menú del día e imperdibles)
+  const specialNote = specialItems.length
+    ? specialItems
+        .map((i) => `${i.quantity}x ${i.product.name}${i.note ? ` (${i.note})` : ""}`)
         .join(", ")
     : null;
 
@@ -159,7 +159,7 @@ export async function createOrder(
 
     const orderRows = await sql`
       INSERT INTO orders (user_id, status, payment_method, delivery_address, phone, subtotal, delivery_fee, total, notes)
-      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total}, ${dailyNote})
+      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total}, ${specialNote})
       RETURNING id
     `;
     const orderId = orderRows[0].id as number;
