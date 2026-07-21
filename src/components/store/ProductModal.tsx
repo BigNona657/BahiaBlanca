@@ -269,7 +269,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
             </div>
           )}
 
-          {/* ── Selector de pastas ── */
+          {/* ── Selector de pastas ── */}
           {isPasta && !pastaNote && (
             <PastaSelector price={parseFloat(product.price)} onConfirm={handlePastaConfirm} />
           )}
