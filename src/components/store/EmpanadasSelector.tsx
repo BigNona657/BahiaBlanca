@@ -16,16 +16,21 @@ const SABORES = [
 export type EmpanadasSelection = {
   sabores: Record<string, number>;
   total: number;
+  price: number;
 };
 
 type Props = {
+  pricePerDozen: number;
+  unitsPerPrice?: number;
   onConfirm: (selection: EmpanadasSelection) => void;
 };
 
-export default function EmpanadasSelector({ onConfirm }: Props) {
+export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, onConfirm }: Props) {
   const [counts, setCounts] = useState<Record<string, number>>({});
 
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
+  const pricePerUnit = pricePerDozen / unitsPerPrice;
+  const calculatedPrice = Math.ceil(pricePerUnit * total);
 
   function change(sabor: string, delta: number) {
     setCounts((prev) => {
@@ -40,7 +45,7 @@ export default function EmpanadasSelector({ onConfirm }: Props) {
 
   function handleConfirm() {
     if (total === 0) return;
-    onConfirm({ sabores: counts, total });
+    onConfirm({ sabores: counts, total, price: calculatedPrice });
   }
 
   return (
@@ -79,9 +84,12 @@ export default function EmpanadasSelector({ onConfirm }: Props) {
       </div>
 
       {total > 0 && (
-        <p className="text-xs text-gray-500 text-right">
-          Total: <span className="font-semibold text-gray-800">{total} empanada{total !== 1 ? "s" : ""}</span>
-        </p>
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>{total} empanada{total !== 1 ? "s" : ""}</span>
+          <span className="font-semibold text-gray-800">
+            ${calculatedPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+          </span>
+        </div>
       )}
 
       <button

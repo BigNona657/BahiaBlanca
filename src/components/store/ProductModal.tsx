@@ -30,6 +30,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
   const [empanadasNote, setEmpanadasNote] = useState<string | null>(null);
   const [empanadasTotal, setEmpanadasTotal] = useState<number | null>(null);
+  const [empanadasPrice, setEmpanadasPrice] = useState<number | null>(null);
   const router = useRouter();
   const { items } = useCart();
 
@@ -41,7 +42,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     : Infinity;
 
   useEffect(() => {
-    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); setEmpanadasNote(null); setEmpanadasTotal(null); }
+    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null); }
   }, [product?.id]);
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       return;
     }
     const note = iceCreamNote ?? empanadasNote ?? undefined;
-    onAdd(product, qty, note);
+    onAdd(product, isEmpanada ? 1 : qty, note);
     onClose();
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote]);
 
@@ -80,15 +81,17 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       .join(", ");
     setEmpanadasNote(detalle);
     setEmpanadasTotal(selection.total);
+    setEmpanadasPrice(selection.price);
   }
 
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
   const isEmpanada = IS_EMPANADA(product);
-  const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice : parseFloat(product.price);
-  const empanadasQty = empanadasTotal ?? 1;
-  const total = isEmpanada ? price * empanadasQty : price * qty;
+  const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice
+    : (isEmpanada && empanadasPrice !== null) ? empanadasPrice
+    : parseFloat(product.price);
+  const total = price * (isEmpanada ? 1 : qty);
   const hasImage = !!(product.image_data || product.image_url);
 
   return (
@@ -164,16 +167,18 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
             </div>
           )}
 
-          {/* ── Selector de empanadas ── */}
           {isEmpanada && !empanadasNote && (
-            <EmpanadasSelector onConfirm={handleEmpanadasConfirm} />
+            <EmpanadasSelector
+              pricePerDozen={parseFloat(product.price)}
+              onConfirm={handleEmpanadasConfirm}
+            />
           )}
 
           {/* Resumen selección empanadas */}
           {isEmpanada && empanadasNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección ({empanadasTotal} unid.)</p>
+                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección — {empanadasTotal} empanada{empanadasTotal !== 1 ? "s" : ""}</p>
                 <p className="text-sm text-gray-700">{empanadasNote}</p>
               </div>
               <button
