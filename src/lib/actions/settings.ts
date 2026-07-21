@@ -16,6 +16,12 @@ export type IceCreamFlavor = {
   available: boolean;
 };
 
+export type PizzaFlavor = {
+  name: string;
+  available: boolean;
+  price: number;
+};
+
 export type IceCreamPote = {
   label: string;
   value: string;
@@ -67,6 +73,34 @@ export async function getAppSettings(): Promise<AppSettings> {
     logo_data: (map.logo_data as string) ?? "",
     logo_size: Number(map.logo_size ?? 36),
   };
+}
+
+export async function getPizzaFlavors(): Promise<PizzaFlavor[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'pizza_flavors' LIMIT 1`;
+  if (!rows.length) return [];
+  try {
+    return JSON.parse(rows[0].value as string) as PizzaFlavor[];
+  } catch {
+    return [];
+  }
+}
+
+export async function savePizzaFlavors(
+  flavors: PizzaFlavor[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(flavors);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('pizza_flavors', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los sabores." };
+  }
 }
 
 export async function getIceCreamFlavors(): Promise<IceCreamFlavor[]> {

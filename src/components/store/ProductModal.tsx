@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
-import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote, PizzaFlavor } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
+import PizzaSelector, { type PizzaSelection } from "./PizzaSelector";
 import { useCart } from "@/context/CartContext";
 
 type Props = {
@@ -16,33 +17,37 @@ type Props = {
   isAuthenticated: boolean;
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
+  pizzaFlavors: PizzaFlavor[];
 };
 
-const IS_ICE_CREAM = (p: Product) =>
-  p.name.toLowerCase().includes("helado");
+const IS_ICE_CREAM = (p: Product) => p.name.toLowerCase().includes("helado");
+const IS_EMPANADA  = (p: Product) => p.name.toLowerCase().includes("empanada");
+const IS_PIZZA     = (p: Product) => p.name.toLowerCase().includes("pizza");
 
-const IS_EMPANADA = (p: Product) =>
-  p.name.toLowerCase().includes("empanada");
-
-export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, pizzaFlavors }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
   const [empanadasNote, setEmpanadasNote] = useState<string | null>(null);
   const [empanadasTotal, setEmpanadasTotal] = useState<number | null>(null);
   const [empanadasPrice, setEmpanadasPrice] = useState<number | null>(null);
+  const [pizzaNote, setPizzaNote] = useState<string | null>(null);
+  const [pizzaPrice, setPizzaPrice] = useState<number | null>(null);
   const router = useRouter();
   const { items } = useCart();
 
-  const inCart = product
-    ? (items.find((i) => i.product.id === product.id)?.quantity ?? 0)
-    : 0;
+  const inCart = product ? (items.find((i) => i.product.id === product.id)?.quantity ?? 0) : 0;
   const maxQty = product?.stock !== undefined && product.stock !== null
     ? Math.max(0, product.stock - inCart)
     : Infinity;
 
   useEffect(() => {
-    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null); }
+    if (product) {
+      setQty(1);
+      setIceCreamNote(null); setIceCreamPrice(null);
+      setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null);
+      setPizzaNote(null); setPizzaPrice(null);
+    }
   }, [product?.id]);
 
   useEffect(() => {
@@ -64,36 +69,51 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       router.push("/login?callbackUrl=%2F");
       return;
     }
-    const note = iceCreamNote ?? empanadasNote ?? undefined;
-    const unitPrice = empanadasPrice ?? (isIceCream && iceCreamPrice !== null ? iceCreamPrice : undefined);
-    onAdd(product, isEmpanada ? 1 : qty, note, unitPrice);
+    const isEmp = IS_EMPANADA(product);
+    const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? undefined;
+    const unitPrice = empanadasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
+    onAdd(product, isEmp ? 1 : qty, note, unitPrice);
     onClose();
-  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote]);
+  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote, pizzaNote, empanadasPrice, iceCreamPrice]);
 
   function handleIceCreamConfirm(selection: IceCreamSelection) {
-    const note = `${selection.pote} | Sabores: ${selection.sabores.join(", ")}`;
-    setIceCreamNote(note);
+    setIceCreamNote(`${selection.pote} | Sabores: ${selection.sabores.join(", ")}`);
     setIceCreamPrice(selection.price);
   }
 
   function handleEmpanadasConfirm(selection: EmpanadasSelection) {
-    const detalle = Object.entries(selection.sabores)
-      .map(([s, n]) => `${n} ${s}`)
-      .join(", ");
-    setEmpanadasNote(detalle);
+    setEmpanadasNote(Object.entries(selection.sabores).map(([s, n]) => `${n} ${s}`).join(", "));
     setEmpanadasTotal(selection.total);
     setEmpanadasPrice(selection.price);
+  }
+
+  function handlePizzaConfirm(selection: PizzaSelection) {
+    setPizzaNote(
+      selection.type === "entera"
+        ? `Entera: ${selection.sabor}`
+        : `Mitad y mitad: ${selection.sabor1} / ${selection.sabor2}`
+    );
+    setPizzaPrice(selection.price);
   }
 
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
   const isEmpanada = IS_EMPANADA(product);
+  const isPizza    = IS_PIZZA(product);
+
   const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice
     : (isEmpanada && empanadasPrice !== null) ? empanadasPrice
+    : (isPizza && pizzaPrice !== null) ? pizzaPrice
     : parseFloat(product.price);
   const total = price * (isEmpanada ? 1 : qty);
   const hasImage = !!(product.image_data || product.image_url);
+
+  // La barra inferior se muestra cuando ya se completó la selección obligatoria
+  const selectionDone =
+    (!isIceCream || !!iceCreamNote) &&
+    (!isEmpanada || !!empanadasNote) &&
+    (!isPizza    || !!pizzaNote);
 
   return (
     <div
@@ -145,57 +165,51 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
           {/* ── Selector de helado ── */}
           {isIceCream && !iceCreamNote && (
-            <IceCreamSelector
-              potes={iceCreamPotes}
-              sabores={iceCreamFlavors}
-              onConfirm={handleIceCreamConfirm}
-            />
+            <IceCreamSelector potes={iceCreamPotes} sabores={iceCreamFlavors} onConfirm={handleIceCreamConfirm} />
           )}
-
-          {/* Resumen selección helado */}
           {isIceCream && iceCreamNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección</p>
                 <p className="text-sm text-gray-700">{iceCreamNote}</p>
               </div>
-              <button
-                onClick={() => setIceCreamNote(null)}
-                className="text-xs text-brand-500 font-medium shrink-0 hover:underline"
-              >
-                Cambiar
-              </button>
+              <button onClick={() => setIceCreamNote(null)} className="text-xs text-brand-500 font-medium shrink-0 hover:underline">Cambiar</button>
             </div>
           )}
 
+          {/* ── Selector de empanadas ── */}
           {isEmpanada && !empanadasNote && (
-            <EmpanadasSelector
-              pricePerDozen={parseFloat(product.price)}
-              onConfirm={handleEmpanadasConfirm}
-            />
+            <EmpanadasSelector pricePerDozen={parseFloat(product.price)} onConfirm={handleEmpanadasConfirm} />
           )}
-
-          {/* Resumen selección empanadas */}
           {isEmpanada && empanadasNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección — {empanadasTotal} empanada{empanadasTotal !== 1 ? "s" : ""}</p>
                 <p className="text-sm text-gray-700">{empanadasNote}</p>
               </div>
-              <button
-                onClick={() => { setEmpanadasNote(null); setEmpanadasTotal(null); }}
-                className="text-xs text-brand-500 font-medium shrink-0 hover:underline"
-              >
-                Cambiar
-              </button>
+              <button onClick={() => { setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null); }} className="text-xs text-brand-500 font-medium shrink-0 hover:underline">Cambiar</button>
+            </div>
+          )}
+
+          {/* ── Selector de pizza ── */}
+          {isPizza && !pizzaNote && (
+            <PizzaSelector flavors={pizzaFlavors} onConfirm={handlePizzaConfirm} />
+          )}
+          {isPizza && pizzaNote && (
+            <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección</p>
+                <p className="text-sm text-gray-700">{pizzaNote}</p>
+              </div>
+              <button onClick={() => { setPizzaNote(null); setPizzaPrice(null); }} className="text-xs text-brand-500 font-medium shrink-0 hover:underline">Cambiar</button>
             </div>
           )}
 
           {/* ── Barra inferior: cantidad + agregar ── */}
-          {(!isIceCream || iceCreamNote) && (!isEmpanada || empanadasNote) && (
+          {selectionDone && (
             <div className="px-5 py-4 mt-auto border-t border-gray-100 bg-white">
               <div className="flex items-center justify-between gap-4">
-                {!isEmpanada && (
+                {!isEmpanada && !isPizza && (
                   <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
                     <button
                       onClick={() => setQty((q) => Math.max(1, q - 1))}

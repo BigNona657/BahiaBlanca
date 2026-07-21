@@ -1,19 +1,21 @@
-import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles } from "@/lib/actions/settings";
+import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles, getPizzaFlavors } from "@/lib/actions/settings";
 import SettingsForm from "@/components/admin/SettingsForm";
 import IceCreamFlavorsForm from "@/components/admin/IceCreamFlavorsForm";
 import IceCreamPotesForm from "@/components/admin/IceCreamPotesForm";
 import DailyMenuForm from "@/components/admin/DailyMenuForm";
 import ImperdiblesForm from "@/components/admin/ImperdiblesForm";
+import PizzaFlavorsForm from "@/components/admin/PizzaFlavorsForm";
 
 export const revalidate = 0;
 
 export default async function AdminSettingsPage() {
-  const [settings, flavors, potes, dailyMenus, imperdibles] = await Promise.all([
+  const [settings, flavors, potes, dailyMenus, imperdibles, pizzaFlavors] = await Promise.all([
     getAppSettings(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
     getDailyMenus(),
     getImperdibles(),
+    getPizzaFlavors(),
   ]);
 
   return (
@@ -43,6 +45,12 @@ export default async function AdminSettingsPage() {
         <h2 className="text-base font-bold text-gray-700 mb-1">Precios de potes 🍨</h2>
         <p className="text-xs text-gray-400 mb-4">Precio de cada tamaño de pote de helado.</p>
         <IceCreamPotesForm initial={potes} />
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-5">
+        <h2 className="text-base font-bold text-gray-700 mb-1">Sabores de pizza 🍕</h2>
+        <p className="text-xs text-gray-400 mb-4">Estos son los sabores que verán los clientes al pedir pizza.</p>
+        <PizzaFlavorsForm initial={pizzaFlavors} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-5">
