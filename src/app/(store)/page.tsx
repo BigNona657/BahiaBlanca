@@ -7,11 +7,11 @@ import DailyMenuCard from "@/components/store/DailyMenuCard";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Menú | BigNona Delivery",
+  title: "Menú de comida casera y helados artesanales | BigNona Bahía Blanca",
   description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657. Helados artesanales, menú del día y más.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "BigNona — Comida casera a domicilio",
+    title: "BigNona — Comida casera y helados artesanales en Bahía Blanca",
     description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657.",
     url: "/",
   },
@@ -31,20 +31,37 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@type": "FoodEstablishment",
     name: "BigNona",
-    description: "Comida casera a domicilio en Bahía Blanca. Delivery y take away.",
+    description: "Comida casera y helados artesanales a domicilio en Bahía Blanca. Delivery y take away.",
     url: "https://big-nona.com.ar",
     telephone: "+542914384316",
+    image: "https://big-nona.com.ar/opengraph-image",
+    servesCuisine: ["Comida casera", "Helados artesanales"],
+    hasMenu: "https://big-nona.com.ar",
+    priceRange: "$$",
+    openingHours: "Mo-Sa 11:00-22:00",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Fatone 657",
       addressLocality: "Bahía Blanca",
       addressRegion: "Buenos Aires",
+      postalCode: "8000",
       addressCountry: "AR",
     },
-    servesCuisine: ["Comida casera", "Helados artesanales"],
-    hasMenu: "https://big-nona.com.ar",
-    priceRange: "$$",
-    openingHours: "Mo-Sa 11:00-22:00",
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: -38.7183,
+      longitude: -62.2663,
+    },
+    areaServed: {
+      "@type": "City",
+      name: "Bahía Blanca",
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: "+542914384316",
+      contactType: "customer service",
+      availableLanguage: "Spanish",
+    },
   };
 
   return (
@@ -59,10 +76,10 @@ export default async function HomePage() {
           Nuestras especialidades se preparan en el momento
         </p>
         <h1 className="text-2xl font-bold text-gray-800">
-          ¿Qué querés comer hoy? 🍽️
+          Delivery y take away en Bahía Blanca 🍽️
         </h1>
         <p className="text-sm text-gray-400 mt-0.5">
-          Pedidos con entrega a domicilio
+          Comida casera y helados artesanales a domicilio
         </p>
         <div className="flex items-center gap-4 mt-3">
           <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 rounded-xl px-3 py-1.5">
