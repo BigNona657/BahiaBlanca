@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
 import type { IceCreamFlavor, IceCreamPote } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
+import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
 import { useCart } from "@/context/CartContext";
 
 type Props = {
@@ -20,10 +21,15 @@ type Props = {
 const IS_ICE_CREAM = (p: Product) =>
   p.name.toLowerCase().includes("helado");
 
+const IS_EMPANADA = (p: Product) =>
+  p.name.toLowerCase().includes("empanada");
+
 export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
+  const [empanadasNote, setEmpanadasNote] = useState<string | null>(null);
+  const [empanadasTotal, setEmpanadasTotal] = useState<number | null>(null);
   const router = useRouter();
   const { items } = useCart();
 
@@ -35,7 +41,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     : Infinity;
 
   useEffect(() => {
-    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); }
+    if (product) { setQty(1); setIceCreamNote(null); setIceCreamPrice(null); setEmpanadasNote(null); setEmpanadasTotal(null); }
   }, [product?.id]);
 
   useEffect(() => {
@@ -57,9 +63,10 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       router.push("/login?callbackUrl=%2F");
       return;
     }
-    onAdd(product, qty, iceCreamNote ?? undefined);
+    const note = iceCreamNote ?? empanadasNote ?? undefined;
+    onAdd(product, qty, note);
     onClose();
-  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote]);
+  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote]);
 
   function handleIceCreamConfirm(selection: IceCreamSelection) {
     const note = `${selection.pote} | Sabores: ${selection.sabores.join(", ")}`;
@@ -67,11 +74,21 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     setIceCreamPrice(selection.price);
   }
 
+  function handleEmpanadasConfirm(selection: EmpanadasSelection) {
+    const detalle = Object.entries(selection.sabores)
+      .map(([s, n]) => `${n} ${s}`)
+      .join(", ");
+    setEmpanadasNote(detalle);
+    setEmpanadasTotal(selection.total);
+  }
+
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
+  const isEmpanada = IS_EMPANADA(product);
   const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice : parseFloat(product.price);
-  const total = price * qty;
+  const empanadasQty = empanadasTotal ?? 1;
+  const total = isEmpanada ? price * empanadasQty : price * qty;
   const hasImage = !!(product.image_data || product.image_url);
 
   return (
@@ -147,26 +164,49 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
             </div>
           )}
 
+          {/* ── Selector de empanadas ── */}
+          {isEmpanada && !empanadasNote && (
+            <EmpanadasSelector onConfirm={handleEmpanadasConfirm} />
+          )}
+
+          {/* Resumen selección empanadas */}
+          {isEmpanada && empanadasNote && (
+            <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección ({empanadasTotal} unid.)</p>
+                <p className="text-sm text-gray-700">{empanadasNote}</p>
+              </div>
+              <button
+                onClick={() => { setEmpanadasNote(null); setEmpanadasTotal(null); }}
+                className="text-xs text-brand-500 font-medium shrink-0 hover:underline"
+              >
+                Cambiar
+              </button>
+            </div>
+          )}
+
           {/* ── Barra inferior: cantidad + agregar ── */}
-          {(!isIceCream || iceCreamNote) && (
+          {(!isIceCream || iceCreamNote) && (!isEmpanada || empanadasNote) && (
             <div className="px-5 py-4 mt-auto border-t border-gray-100 bg-white">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
-                  <button
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 text-center font-semibold text-gray-800">{qty}</span>
-                  <button
-                    onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
-                    disabled={qty >= maxQty}
-                    className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    +
-                  </button>
-                </div>
+                {!isEmpanada && (
+                  <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
+                    <button
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 text-center font-semibold text-gray-800">{qty}</span>
+                    <button
+                      onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                      disabled={qty >= maxQty}
+                      className="w-8 h-8 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
 
                 <button
                   onClick={handleAdd}
