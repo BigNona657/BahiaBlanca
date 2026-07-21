@@ -12,7 +12,7 @@ import { useCart } from "@/context/CartContext";
 type Props = {
   product: Product | null;
   onClose: () => void;
-  onAdd: (product: Product, quantity: number, note?: string) => void;
+  onAdd: (product: Product, quantity: number, note?: string, unitPrice?: number) => void;
   isAuthenticated: boolean;
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
@@ -65,7 +65,8 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       return;
     }
     const note = iceCreamNote ?? empanadasNote ?? undefined;
-    onAdd(product, isEmpanada ? 1 : qty, note);
+    const unitPrice = empanadasPrice ?? (isIceCream && iceCreamPrice !== null ? iceCreamPrice : undefined);
+    onAdd(product, isEmpanada ? 1 : qty, note, unitPrice);
     onClose();
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote]);
 

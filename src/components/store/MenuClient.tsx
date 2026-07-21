@@ -33,8 +33,8 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   );
 
   const handleAddWithQty = useCallback(
-    (product: Product, quantity: number, note?: string) => {
-      for (let i = 0; i < quantity; i++) addToCart(product, note);
+    (product: Product, quantity: number, note?: string, unitPrice?: number) => {
+      for (let i = 0; i < quantity; i++) addToCart(product, note, unitPrice);
     },
     [addToCart]
   );

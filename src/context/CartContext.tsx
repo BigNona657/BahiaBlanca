@@ -18,6 +18,7 @@ export type CartItem = {
   product: Product;
   quantity: number;
   note?: string;
+  unitPrice?: number;
 };
 
 type CartState = {
@@ -25,9 +26,9 @@ type CartState = {
 };
 
 type CartAction =
-  | { type: "ADD"; product: Product; note?: string }
-  | { type: "REMOVE"; productId: number }
-  | { type: "DECREMENT"; productId: number }
+  | { type: "ADD"; product: Product; note?: string; unitPrice?: number }
+  | { type: "REMOVE"; productId: number; note?: string }
+  | { type: "DECREMENT"; productId: number; note?: string }
   | { type: "CLEAR" }
   | { type: "HYDRATE"; items: CartItem[] };
 
@@ -35,9 +36,9 @@ type CartContextValue = {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
-  addToCart: (product: Product, note?: string) => void;
-  removeFromCart: (productId: number) => void;
-  decrementFromCart: (productId: number) => void;
+  addToCart: (product: Product, note?: string, unitPrice?: number) => void;
+  removeFromCart: (productId: number, note?: string) => void;
+  decrementFromCart: (productId: number, note?: string) => void;
   clearCart: () => void;
 };
 
@@ -58,24 +59,26 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           ),
         };
       }
-      return { items: [...state.items, { product: action.product, quantity: 1, note: action.note }] };
+      return { items: [...state.items, { product: action.product, quantity: 1, note: action.note, unitPrice: action.unitPrice }] };
     }
 
     case "DECREMENT": {
-      const existing = state.items.find((i) => i.product.id === action.productId);
+      const existing = state.items.find(
+        (i) => i.product.id === action.productId && i.note === action.note
+      );
       if (!existing) return state;
       if (existing.quantity === 1) {
-        return { items: state.items.filter((i) => i.product.id !== action.productId) };
+        return { items: state.items.filter((i) => !(i.product.id === action.productId && i.note === action.note)) };
       }
       return {
         items: state.items.map((i) =>
-          i.product.id === action.productId ? { ...i, quantity: i.quantity - 1 } : i
+          i.product.id === action.productId && i.note === action.note ? { ...i, quantity: i.quantity - 1 } : i
         ),
       };
     }
 
     case "REMOVE":
-      return { items: state.items.filter((i) => i.product.id !== action.productId) };
+      return { items: state.items.filter((i) => !(i.product.id === action.productId && i.note === action.note)) };
 
     case "CLEAR":
       return { items: [] };
@@ -120,16 +123,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = useCallback((product: Product, note?: string) => {
-    dispatch({ type: "ADD", product, note });
+  const addToCart = useCallback((product: Product, note?: string, unitPrice?: number) => {
+    dispatch({ type: "ADD", product, note, unitPrice });
   }, []);
 
-  const removeFromCart = useCallback((productId: number) => {
-    dispatch({ type: "REMOVE", productId });
+  const removeFromCart = useCallback((productId: number, note?: string) => {
+    dispatch({ type: "REMOVE", productId, note });
   }, []);
 
-  const decrementFromCart = useCallback((productId: number) => {
-    dispatch({ type: "DECREMENT", productId });
+  const decrementFromCart = useCallback((productId: number, note?: string) => {
+    dispatch({ type: "DECREMENT", productId, note });
   }, []);
 
   const clearCart = useCallback(() => {
@@ -144,7 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const totalPrice = useMemo(
     () =>
       state.items.reduce(
-        (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
+        (sum, i) => sum + (i.unitPrice ?? parseFloat(i.product.price)) * i.quantity,
         0
       ),
     [state.items]

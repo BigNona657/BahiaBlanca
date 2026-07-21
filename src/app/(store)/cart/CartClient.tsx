@@ -112,9 +112,9 @@ export default function CartClient() {
               <CartItemRow
                 key={`${item.product.id}-${item.note ?? ""}`}
                 item={item}
-                onAdd={() => addToCart(item.product, item.note)}
-                onDecrement={() => decrementFromCart(item.product.id)}
-                onRemove={() => removeFromCart(item.product.id)}
+                onAdd={() => addToCart(item.product, item.note, item.unitPrice)}
+                onDecrement={() => decrementFromCart(item.product.id, item.note)}
+                onRemove={() => removeFromCart(item.product.id, item.note)}
               />
             ))}
 
