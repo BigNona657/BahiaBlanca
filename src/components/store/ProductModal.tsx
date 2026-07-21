@@ -85,7 +85,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     const unitPrice = empanadasPrice ?? tartasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
     onAdd(product, (isEmp || isTarta) ? 1 : qty, note, unitPrice);
     onClose();
-  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote, pizzaNote, empanadasPrice, iceCreamPrice]);
+  }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, iceCreamPrice, empanadasNote, empanadasPrice, pizzaNote, pizzaPrice, tartasNote, tartasPrice, pastaNote]);
 
   function handleIceCreamConfirm(selection: IceCreamSelection) {
     setIceCreamNote(`${selection.pote} | Sabores: ${selection.sabores.join(", ")}`);
