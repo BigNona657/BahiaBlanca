@@ -8,6 +8,7 @@ import type { IceCreamFlavor, IceCreamPote, PizzaFlavor } from "@/lib/actions/se
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
 import PizzaSelector, { type PizzaSelection } from "./PizzaSelector";
+import TartasSelector, { type TartasSelection } from "./TartasSelector";
 import { useCart } from "@/context/CartContext";
 
 type Props = {
@@ -23,6 +24,7 @@ type Props = {
 const IS_ICE_CREAM = (p: Product) => p.name.toLowerCase().includes("helado");
 const IS_EMPANADA  = (p: Product) => p.name.toLowerCase().includes("empanada");
 const IS_PIZZA     = (p: Product) => p.name.toLowerCase().includes("pizza");
+const IS_TARTA     = (p: Product) => p.name.toLowerCase().includes("tarta");
 
 export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, pizzaFlavors }: Props) {
   const [qty, setQty] = useState(1);
@@ -33,6 +35,9 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   const [empanadasPrice, setEmpanadasPrice] = useState<number | null>(null);
   const [pizzaNote, setPizzaNote] = useState<string | null>(null);
   const [pizzaPrice, setPizzaPrice] = useState<number | null>(null);
+  const [tartasNote, setTartasNote] = useState<string | null>(null);
+  const [tartasTotal, setTartasTotal] = useState<number | null>(null);
+  const [tartasPrice, setTartasPrice] = useState<number | null>(null);
   const router = useRouter();
   const { items } = useCart();
 
@@ -47,6 +52,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       setIceCreamNote(null); setIceCreamPrice(null);
       setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null);
       setPizzaNote(null); setPizzaPrice(null);
+      setTartasNote(null); setTartasTotal(null); setTartasPrice(null);
     }
   }, [product?.id]);
 
@@ -69,10 +75,11 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       router.push("/login?callbackUrl=%2F");
       return;
     }
-    const isEmp = IS_EMPANADA(product);
-    const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? undefined;
-    const unitPrice = empanadasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
-    onAdd(product, isEmp ? 1 : qty, note, unitPrice);
+    const isEmp   = IS_EMPANADA(product);
+    const isTarta = IS_TARTA(product);
+    const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? tartasNote ?? undefined;
+    const unitPrice = empanadasPrice ?? tartasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
+    onAdd(product, (isEmp || isTarta) ? 1 : qty, note, unitPrice);
     onClose();
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, empanadasNote, pizzaNote, empanadasPrice, iceCreamPrice]);
 
@@ -96,24 +103,33 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     setPizzaPrice(selection.price);
   }
 
+  function handleTartasConfirm(selection: TartasSelection) {
+    setTartasNote(Object.entries(selection.sabores).map(([s, n]) => `${n} ${s}`).join(", "));
+    setTartasTotal(selection.total);
+    setTartasPrice(selection.price);
+  }
+
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
   const isEmpanada = IS_EMPANADA(product);
   const isPizza    = IS_PIZZA(product);
+  const isTarta    = IS_TARTA(product);
 
   const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice
     : (isEmpanada && empanadasPrice !== null) ? empanadasPrice
     : (isPizza && pizzaPrice !== null) ? pizzaPrice
+    : (isTarta && tartasPrice !== null) ? tartasPrice
     : parseFloat(product.price);
-  const total = price * (isEmpanada ? 1 : qty);
+  const total = price * ((isEmpanada || isTarta) ? 1 : qty);
   const hasImage = !!(product.image_data || product.image_url);
 
   // La barra inferior se muestra cuando ya se completó la selección obligatoria
   const selectionDone =
     (!isIceCream || !!iceCreamNote) &&
     (!isEmpanada || !!empanadasNote) &&
-    (!isPizza    || !!pizzaNote);
+    (!isPizza    || !!pizzaNote) &&
+    (!isTarta    || !!tartasNote);
 
   return (
     <div
@@ -205,11 +221,25 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
             </div>
           )}
 
+          {/* ── Selector de tartas ── */}
+          {isTarta && !tartasNote && (
+            <TartasSelector pricePerUnit={parseFloat(product.price)} onConfirm={handleTartasConfirm} />
+          )}
+          {isTarta && tartasNote && (
+            <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección — {tartasTotal} tarta{tartasTotal !== 1 ? "s" : ""}</p>
+                <p className="text-sm text-gray-700">{tartasNote}</p>
+              </div>
+              <button onClick={() => { setTartasNote(null); setTartasTotal(null); setTartasPrice(null); }} className="text-xs text-brand-500 font-medium shrink-0 hover:underline">Cambiar</button>
+            </div>
+          )}
+
           {/* ── Barra inferior: cantidad + agregar ── */}
           {selectionDone && (
             <div className="px-5 py-4 mt-auto border-t border-gray-100 bg-white">
               <div className="flex items-center justify-between gap-4">
-                {!isEmpanada && !isPizza && (
+                {!isEmpanada && !isPizza && !isTarta && (
                   <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
                     <button
                       onClick={() => setQty((q) => Math.max(1, q - 1))}

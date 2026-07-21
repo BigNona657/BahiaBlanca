@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { CartItem } from "@/context/CartContext";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
+import TartasSelector, { type TartasSelection } from "./TartasSelector";
 
 type Props = {
   item: CartItem;
@@ -13,7 +14,7 @@ type Props = {
   onUpdate: (note: string, unitPrice: number) => void;
 };
 
-function parseEmpanadasNote(note: string): Record<string, number> {
+function parseSaboresNote(note: string): Record<string, number> {
   const result: Record<string, number> = {};
   note.split(", ").forEach((part) => {
     const match = part.match(/^(\d+)\s+(.+)$/);
@@ -27,13 +28,17 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpda
   const effectivePrice = unitPrice ?? parseFloat(product.price);
   const subtotal = effectivePrice * quantity;
   const isEmpanada = product.name.toLowerCase().includes("empanada");
+  const isTarta    = product.name.toLowerCase().includes("tarta");
+  const isCustomQty = isEmpanada || isTarta;
   const [editing, setEditing] = useState(false);
 
   function handleEmpanadasUpdate(selection: EmpanadasSelection) {
-    const detalle = Object.entries(selection.sabores)
-      .map(([s, n]) => `${n} ${s}`)
-      .join(", ");
-    onUpdate(detalle, selection.price);
+    onUpdate(Object.entries(selection.sabores).map(([s, n]) => `${n} ${s}`).join(", "), selection.price);
+    setEditing(false);
+  }
+
+  function handleTartasUpdate(selection: TartasSelection) {
+    onUpdate(Object.entries(selection.sabores).map(([s, n]) => `${n} ${s}`).join(", "), selection.price);
     setEditing(false);
   }
 
@@ -65,8 +70,7 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpda
             <p className="text-xs text-brand-500 mt-0.5 leading-snug">{item.note}</p>
           )}
 
-          {/* Controles de cantidad o botón editar */}
-          {isEmpanada ? (
+          {isCustomQty ? (
             <button
               onClick={() => setEditing((v) => !v)}
               className="mt-1.5 text-xs font-medium text-brand-500 hover:underline"
@@ -104,13 +108,24 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpda
         </div>
       </div>
 
-      {/* Editor inline de empanadas */}
+      {/* Editor inline empanadas */}
       {isEmpanada && editing && (
         <div className="mt-3 border border-brand-100 rounded-2xl overflow-hidden bg-brand-50/30">
           <EmpanadasSelector
             pricePerDozen={parseFloat(product.price)}
-            initial={item.note ? parseEmpanadasNote(item.note) : undefined}
+            initial={item.note ? parseSaboresNote(item.note) : undefined}
             onConfirm={handleEmpanadasUpdate}
+          />
+        </div>
+      )}
+
+      {/* Editor inline tartas */}
+      {isTarta && editing && (
+        <div className="mt-3 border border-brand-100 rounded-2xl overflow-hidden bg-brand-50/30">
+          <TartasSelector
+            pricePerUnit={parseFloat(product.price)}
+            initial={item.note ? parseSaboresNote(item.note) : undefined}
+            onConfirm={handleTartasUpdate}
           />
         </div>
       )}
