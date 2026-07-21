@@ -9,6 +9,7 @@ import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
 import PizzaSelector, { type PizzaSelection } from "./PizzaSelector";
 import TartasSelector, { type TartasSelection } from "./TartasSelector";
+import PastaSelector, { type PastaSelection } from "./PastaSelector";
 import { useCart } from "@/context/CartContext";
 
 type Props = {
@@ -25,6 +26,7 @@ const IS_ICE_CREAM = (p: Product) => p.name.toLowerCase().includes("helado");
 const IS_EMPANADA  = (p: Product) => p.name.toLowerCase().includes("empanada");
 const IS_PIZZA     = (p: Product) => p.name.toLowerCase().includes("pizza");
 const IS_TARTA     = (p: Product) => p.name.toLowerCase().includes("tarta");
+const IS_PASTA     = (p: Product) => /(sorrentino|raviole|capelleti)/i.test(p.name);
 
 export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, pizzaFlavors }: Props) {
   const [qty, setQty] = useState(1);
@@ -38,6 +40,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   const [tartasNote, setTartasNote] = useState<string | null>(null);
   const [tartasTotal, setTartasTotal] = useState<number | null>(null);
   const [tartasPrice, setTartasPrice] = useState<number | null>(null);
+  const [pastaNote, setPastaNote] = useState<string | null>(null);
   const router = useRouter();
   const { items } = useCart();
 
@@ -53,6 +56,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       setEmpanadasNote(null); setEmpanadasTotal(null); setEmpanadasPrice(null);
       setPizzaNote(null); setPizzaPrice(null);
       setTartasNote(null); setTartasTotal(null); setTartasPrice(null);
+      setPastaNote(null);
     }
   }, [product?.id]);
 
@@ -77,7 +81,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     }
     const isEmp   = IS_EMPANADA(product);
     const isTarta = IS_TARTA(product);
-    const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? tartasNote ?? undefined;
+    const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? tartasNote ?? pastaNote ?? undefined;
     const unitPrice = empanadasPrice ?? tartasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
     onAdd(product, (isEmp || isTarta) ? 1 : qty, note, unitPrice);
     onClose();
@@ -109,12 +113,17 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     setTartasPrice(selection.price);
   }
 
+  function handlePastaConfirm(selection: PastaSelection) {
+    setPastaNote(`${selection.pasta} con salsa ${selection.salsa}`);
+  }
+
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
   const isEmpanada = IS_EMPANADA(product);
   const isPizza    = IS_PIZZA(product);
   const isTarta    = IS_TARTA(product);
+  const isPasta    = IS_PASTA(product);
 
   const price = (isIceCream && iceCreamPrice !== null) ? iceCreamPrice
     : (isEmpanada && empanadasPrice !== null) ? empanadasPrice
@@ -129,7 +138,8 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     (!isIceCream || !!iceCreamNote) &&
     (!isEmpanada || !!empanadasNote) &&
     (!isPizza    || !!pizzaNote) &&
-    (!isTarta    || !!tartasNote);
+    (!isTarta    || !!tartasNote) &&
+    (!isPasta    || !!pastaNote);
 
   return (
     <div
@@ -235,11 +245,25 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
             </div>
           )}
 
+          {/* ── Selector de pastas ── */}
+          {isPasta && !pastaNote && (
+            <PastaSelector price={parseFloat(product.price)} onConfirm={handlePastaConfirm} />
+          )}
+          {isPasta && pastaNote && (
+            <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-brand-600 mb-0.5">Tu selección</p>
+                <p className="text-sm text-gray-700">{pastaNote}</p>
+              </div>
+              <button onClick={() => setPastaNote(null)} className="text-xs text-brand-500 font-medium shrink-0 hover:underline">Cambiar</button>
+            </div>
+          )}
+
           {/* ── Barra inferior: cantidad + agregar ── */}
           {selectionDone && (
             <div className="px-5 py-4 mt-auto border-t border-gray-100 bg-white">
               <div className="flex items-center justify-between gap-4">
-                {!isEmpanada && !isPizza && !isTarta && (
+                {!isEmpanada && !isPizza && !isTarta && !isPasta && (
                   <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
                     <button
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
