@@ -22,11 +22,12 @@ export type EmpanadasSelection = {
 type Props = {
   pricePerDozen: number;
   unitsPerPrice?: number;
+  initial?: Record<string, number>;
   onConfirm: (selection: EmpanadasSelection) => void;
 };
 
-export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, onConfirm }: Props) {
-  const [counts, setCounts] = useState<Record<string, number>>({});
+export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, initial, onConfirm }: Props) {
+  const [counts, setCounts] = useState<Record<string, number>>(initial ?? {});
 
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
   const pricePerUnit = pricePerDozen / unitsPerPrice;

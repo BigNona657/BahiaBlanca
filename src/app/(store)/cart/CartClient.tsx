@@ -23,7 +23,7 @@ const INITIAL_FORM: CheckoutFormData = {
 };
 
 export default function CartClient() {
-  const { items, totalItems, totalPrice, addToCart, decrementFromCart, removeFromCart, clearCart } =
+  const { items, totalItems, totalPrice, addToCart, decrementFromCart, removeFromCart, updateItem, clearCart } =
     useCart();
   const { data: session } = useSession();
   const router = useRouter();
@@ -115,6 +115,7 @@ export default function CartClient() {
                 onAdd={() => addToCart(item.product, item.note, item.unitPrice)}
                 onDecrement={() => decrementFromCart(item.product.id, item.note)}
                 onRemove={() => removeFromCart(item.product.id, item.note)}
+                onUpdate={(note, unitPrice) => updateItem(item.product.id, item.note, note, unitPrice)}
               />
             ))}
 

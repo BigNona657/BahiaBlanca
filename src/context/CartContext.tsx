@@ -29,6 +29,7 @@ type CartAction =
   | { type: "ADD"; product: Product; note?: string; unitPrice?: number }
   | { type: "REMOVE"; productId: number; note?: string }
   | { type: "DECREMENT"; productId: number; note?: string }
+  | { type: "UPDATE"; productId: number; oldNote?: string; note: string; unitPrice: number }
   | { type: "CLEAR" }
   | { type: "HYDRATE"; items: CartItem[] };
 
@@ -39,6 +40,7 @@ type CartContextValue = {
   addToCart: (product: Product, note?: string, unitPrice?: number) => void;
   removeFromCart: (productId: number, note?: string) => void;
   decrementFromCart: (productId: number, note?: string) => void;
+  updateItem: (productId: number, oldNote: string | undefined, note: string, unitPrice: number) => void;
   clearCart: () => void;
 };
 
@@ -76,6 +78,15 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         ),
       };
     }
+
+    case "UPDATE":
+      return {
+        items: state.items.map((i) =>
+          i.product.id === action.productId && i.note === action.oldNote
+            ? { ...i, note: action.note, unitPrice: action.unitPrice }
+            : i
+        ),
+      };
 
     case "REMOVE":
       return { items: state.items.filter((i) => !(i.product.id === action.productId && i.note === action.note)) };
@@ -135,6 +146,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "DECREMENT", productId, note });
   }, []);
 
+  const updateItem = useCallback(
+    (productId: number, oldNote: string | undefined, note: string, unitPrice: number) => {
+      dispatch({ type: "UPDATE", productId, oldNote, note, unitPrice });
+    },
+    []
+  );
+
   const clearCart = useCallback(() => {
     dispatch({ type: "CLEAR" });
   }, []);
@@ -161,9 +179,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToCart,
       removeFromCart,
       decrementFromCart,
+      updateItem,
       clearCart,
     }),
-    [state.items, totalItems, totalPrice, addToCart, removeFromCart, decrementFromCart, clearCart]
+    [state.items, totalItems, totalPrice, addToCart, removeFromCart, decrementFromCart, updateItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
