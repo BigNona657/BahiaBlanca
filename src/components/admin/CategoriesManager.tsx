@@ -29,7 +29,7 @@ export default function CategoriesManager({ initial }: { initial: Category[] }) 
         setNewName("");
         setCategories((prev) => [
           ...prev,
-          { id: Date.now(), name: newName.trim(), slug: "", image_url: null, sort_order: prev.length + 1 },
+          { id: Date.now(), name: newName.trim(), slug: "", image_url: null, image_data: null, sort_order: prev.length + 1 },
         ]);
       } else {
         setError(res.error ?? "Error al crear.");
