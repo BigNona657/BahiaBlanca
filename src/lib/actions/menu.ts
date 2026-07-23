@@ -5,7 +5,7 @@ import type { Category, Product } from "@/types/menu";
 
 export async function getCategories(): Promise<Category[]> {
   const rows = await sql`
-    SELECT id, name, slug, image_url, sort_order
+    SELECT id, name, slug, image_url, image_data, sort_order
     FROM categories
     ORDER BY sort_order ASC
   `;

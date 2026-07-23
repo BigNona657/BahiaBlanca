@@ -258,6 +258,6 @@ export async function updateProduct(
 }
 
 export async function getAdminCategories(): Promise<Category[]> {
-  const rows = await sql`SELECT id, name, slug, image_url, sort_order FROM categories ORDER BY sort_order ASC`;
+  const rows = await sql`SELECT id, name, slug, image_url, image_data, sort_order FROM categories ORDER BY sort_order ASC`;
   return rows as Category[];
 }

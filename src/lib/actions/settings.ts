@@ -395,7 +395,7 @@ export async function updateCategoryImage(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await assertAdmin();
-    await sql`UPDATE categories SET image_url = ${imageData} WHERE id = ${id}`;
+    await sql`UPDATE categories SET image_data = ${imageData} WHERE id = ${id}`;
     revalidatePath("/admin/categories");
     revalidatePath("/");
     return { success: true };

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import Image from "next/image";
 import {
   createCategory,
   updateCategory,
@@ -114,8 +113,13 @@ export default function CategoriesManager({ initial }: { initial: Category[] }) 
               className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 cursor-pointer group"
               onClick={() => fileInputRefs.current[cat.id]?.click()}
             >
-              {cat.image_url ? (
-                <Image src={cat.image_url} alt={cat.name} fill sizes="56px" className="object-cover" />
+              {(cat.image_data || cat.image_url) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={cat.image_data || cat.image_url!}
+                  alt={cat.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
               )}
