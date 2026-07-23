@@ -388,3 +388,18 @@ export async function deleteCategory(
     return { success: false, error: "No se pudo eliminar la categoría." };
   }
 }
+
+export async function updateCategoryImage(
+  id: number,
+  imageData: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await assertAdmin();
+    await sql`UPDATE categories SET image_url = ${imageData} WHERE id = ${id}`;
+    revalidatePath("/admin/categories");
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar la imagen." };
+  }
+}
