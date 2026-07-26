@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
 import type { IceCreamFlavor, IceCreamPote, ImperdibleItem, PizzaFlavor } from "@/lib/actions/settings";
@@ -25,6 +25,25 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+
+  // Sincronizar con el historial del navegador para que "atrás" funcione en móvil
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      setSelectedCategory(e.state?.categoryId ?? null);
+      setActiveProduct(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function selectCategory(id: number) {
+    window.history.pushState({ categoryId: id }, "");
+    setSelectedCategory(id);
+  }
+
+  function goBack() {
+    window.history.back();
+  }
 
   const selectedCategoryData = useMemo(
     () => categories.find((c) => c.id === selectedCategory) ?? null,
@@ -56,7 +75,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
       {selectedCategory === null && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
           {categories.map((cat) => (
-            <CategoryCard key={cat.id} category={cat} onSelect={setSelectedCategory} />
+            <CategoryCard key={cat.id} category={cat} onSelect={selectCategory} />
           ))}
         </div>
       )}
@@ -67,7 +86,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
           {/* Header con botón volver + filtro */}
           <div className="px-4 flex items-center gap-3">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={goBack}
               className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 transition"
             >
               <span className="text-lg leading-none">←</span>
@@ -79,7 +98,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
           <CategoryFilter
             categories={categories}
             selected={selectedCategory}
-            onSelect={(id) => setSelectedCategory(id)}
+            onSelect={selectCategory}
           />
 
           {filtered.length === 0 ? (
