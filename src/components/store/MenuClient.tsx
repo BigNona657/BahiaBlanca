@@ -36,7 +36,8 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  function selectCategory(id: number) {
+  function selectCategory(id: number | null) {
+    if (id === null) { goBack(); return; }
     window.history.pushState({ categoryId: id }, "");
     setSelectedCategory(id);
   }
