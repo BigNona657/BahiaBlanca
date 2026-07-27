@@ -4,7 +4,7 @@ import { getIceCreamFlavors, getIceCreamPotes, getDailyMenu, getImperdibles, get
 import MenuClient from "@/components/store/MenuClient";
 import DailyMenuCard from "@/components/store/DailyMenuCard";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Menú de comida casera y helados artesanales | BigNona Bahía Blanca",
