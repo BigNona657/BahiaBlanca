@@ -71,10 +71,20 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   }, [onClose]);
 
   useEffect(() => {
-    if (product) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    if (product) {
+      window.history.pushState({ modal: true }, "");
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => { document.body.style.overflow = ""; };
   }, [product]);
+
+  useEffect(() => {
+    const handlePopState = () => { onClose(); };
+    if (product) window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [product, onClose]);
 
   const handleAdd = useCallback(() => {
     if (!product) return;
