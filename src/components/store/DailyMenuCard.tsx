@@ -24,7 +24,12 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
 
   // Bloquear scroll cuando el modal está abierto
   useEffect(() => {
-    document.body.style.overflow = modalOpen ? "hidden" : "";
+    if (modalOpen) {
+      window.history.pushState({ modal: "daily" }, "");
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => { document.body.style.overflow = ""; };
   }, [modalOpen]);
 
@@ -34,6 +39,13 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Cerrar con botón atrás del celular
+  useEffect(() => {
+    const handlePopState = () => setModalOpen(false);
+    if (modalOpen) window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [modalOpen]);
 
   function buildProduct() {
     return {
