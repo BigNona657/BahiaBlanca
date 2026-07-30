@@ -51,6 +51,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   const maxQty = product?.stock !== undefined && product.stock !== null
     ? Math.max(0, product.stock - inCart)
     : Infinity;
+  const isOutOfStock = maxQty === 0;
 
   useEffect(() => {
     if (product) {
@@ -318,9 +319,12 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
                 <button
                   onClick={handleAdd}
-                  className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm flex items-center justify-between px-4 transition"
+                  disabled={isOutOfStock}
+                  className="flex-1 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm flex items-center justify-between px-4 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAuthenticated ? (
+                  {isOutOfStock ? (
+                    <span className="w-full text-center">Agotado</span>
+                  ) : isAuthenticated ? (
                     <>
                       <span>Agregar al carrito</span>
                       <span className="font-bold">

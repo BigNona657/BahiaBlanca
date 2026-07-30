@@ -7,11 +7,11 @@ import DailyMenuCard from "@/components/store/DailyMenuCard";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Menú de comida casera y helados artesanales | BigNona Bahía Blanca",
-  description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657. Helados artesanales, menú del día y más.",
+  title: "Menú de comida casera y helados | BigNona Bahía Blanca",
+  description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657. Helados, menú del día y más.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "BigNona — Comida casera y helados artesanales en Bahía Blanca",
+    title: "BigNona — Comida casera y helados en Bahía Blanca",
     description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657.",
     url: "/",
   },
@@ -32,11 +32,11 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@type": "FoodEstablishment",
     name: "BigNona",
-    description: "Comida casera y helados artesanales a domicilio en Bahía Blanca. Delivery y take away.",
+    description: "Comida casera y helados a domicilio en Bahía Blanca. Delivery y take away.",
     url: "https://big-nona.com.ar",
     telephone: "+542914384316",
     image: "https://big-nona.com.ar/opengraph-image",
-    servesCuisine: ["Comida casera", "Helados artesanales"],
+    servesCuisine: ["Comida casera", "Helados"],
     hasMenu: "https://big-nona.com.ar",
     priceRange: "$$",
     openingHours: "Mo-Sa 11:00-22:00",
@@ -80,7 +80,7 @@ export default async function HomePage() {
           Delivery y take away en Bahía Blanca 🍽️
         </h1>
         <p className="text-sm text-gray-400 mt-0.5">
-          Comida casera y helados artesanales a domicilio
+          Comida casera y helados a domicilio
         </p>
         <div className="flex items-center gap-4 mt-3">
           <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 rounded-xl px-3 py-1.5">

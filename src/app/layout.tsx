@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const SITE_URL = "https://big-nona.com.ar";
 const SITE_NAME = "BigNona — Comida casera a domicilio en Bahía Blanca";
-const SITE_DESCRIPTION = "Pedí comida casera, helados artesanales y más con delivery o take away en Bahía Blanca. Rápido, fácil y rico. Fatone 657.";
+const SITE_DESCRIPTION = "Pedí comida casera, helados y más con delivery o take away en Bahía Blanca. Rápido, fácil y rico. Fatone 657.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
     languages: { "es-AR": SITE_URL },
   },
-  keywords: ["delivery Bahía Blanca", "comida casera Bahía Blanca", "pedidos online Bahía Blanca", "take away Bahía Blanca", "helados artesanales", "BigNona", "comida a domicilio", "restaurante delivery"],
+  keywords: ["delivery Bahía Blanca", "comida casera Bahía Blanca", "pedidos online Bahía Blanca", "take away Bahía Blanca", "helados", "BigNona", "comida a domicilio", "restaurante delivery"],
   authors: [{ name: "BigNona" }],
   creator: "BigNona",
   openGraph: {
