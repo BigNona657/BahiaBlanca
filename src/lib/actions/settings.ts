@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db/client";
@@ -73,6 +73,66 @@ export async function getAppSettings(): Promise<AppSettings> {
     logo_data: (map.logo_data as string) ?? "",
     logo_size: Number(map.logo_size ?? 36),
   };
+}
+
+// Trae todos los settings de una sola query — usar en la página principal
+export async function getAllSettings(): Promise<{
+  appSettings: AppSettings;
+  iceCreamFlavors: IceCreamFlavor[];
+  iceCreamPotes: IceCreamPote[];
+  pizzaFlavors: PizzaFlavor[];
+  imperdibles: ImperdibleItem[];
+  dailyMenu: DailyMenu | null;
+}> {
+  const rows = await sql`SELECT key, value FROM app_settings`;
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value as string]));
+
+  const appSettings: AppSettings = {
+    business_name: map.business_name ?? "BigNona",
+    logo_data: map.logo_data ?? "",
+    logo_size: Number(map.logo_size ?? 36),
+  };
+
+  let iceCreamFlavors: IceCreamFlavor[] = DEFAULT_FLAVORS;
+  try {
+    if (map.ice_cream_flavors) {
+      const parsed = JSON.parse(map.ice_cream_flavors);
+      if (Array.isArray(parsed) && typeof parsed[0] === "string") {
+        iceCreamFlavors = (parsed as string[]).map((name) => ({ name, available: true }));
+      } else {
+        iceCreamFlavors = parsed;
+      }
+    }
+  } catch {}
+
+  let iceCreamPotes: IceCreamPote[] = DEFAULT_POTES;
+  try { if (map.ice_cream_potes) iceCreamPotes = JSON.parse(map.ice_cream_potes); } catch {}
+
+  let pizzaFlavors: PizzaFlavor[] = [];
+  try { if (map.pizza_flavors) pizzaFlavors = JSON.parse(map.pizza_flavors); } catch {}
+
+  let imperdibles: ImperdibleItem[] = [];
+  try {
+    if (map.imperdibles) {
+      const parsed = JSON.parse(map.imperdibles);
+      if (Array.isArray(parsed) && (parsed.length === 0 || typeof parsed[0] !== "number")) {
+        imperdibles = parsed;
+      }
+    }
+  } catch {}
+
+  let dailyMenu: DailyMenu | null = null;
+  try {
+    const menusRaw = map.daily_menus ?? map.daily_menu;
+    if (menusRaw) {
+      const parsed = JSON.parse(menusRaw);
+      const today = getTodayArgentina();
+      const menu = Array.isArray(parsed) && parsed[today] ? parsed[today] : parsed;
+      if (menu?.active && menu?.title) dailyMenu = { ...menu, day: today };
+    }
+  } catch {}
+
+  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, imperdibles, dailyMenu };
 }
 
 export async function getPizzaFlavors(): Promise<PizzaFlavor[]> {
@@ -313,6 +373,7 @@ export async function saveAppSettings(
     }
     revalidatePath("/");
     revalidatePath("/admin/settings");
+    revalidateTag("app-settings");
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo guardar la configuración." };

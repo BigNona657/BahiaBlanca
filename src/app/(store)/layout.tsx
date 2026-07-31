@@ -2,9 +2,16 @@ import Navbar from "@/components/store/Navbar";
 import BottomNav from "@/components/store/BottomNav";
 import { getAppSettings } from "@/lib/actions/settings";
 import { ClientUnreadProvider } from "@/context/ClientUnreadContext";
+import { unstable_cache } from "next/cache";
+
+const getCachedAppSettings = unstable_cache(
+  getAppSettings,
+  ["app-settings"],
+  { revalidate: 300, tags: ["app-settings"] }
+);
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getAppSettings();
+  const settings = await getCachedAppSettings();
 
   return (
     <ClientUnreadProvider>
