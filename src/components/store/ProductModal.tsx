@@ -240,7 +240,11 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
           {/* ── Selector de pizza ── */}
           {isPizza && !pizzaNote && (
-            <PizzaSelector flavors={pizzaFlavors} onConfirm={handlePizzaConfirm} />
+            <PizzaSelector
+              flavors={pizzaFlavors}
+              currentFlavor={pizzaFlavors.find((f) => product.name.toLowerCase().includes(f.name.toLowerCase()))?.name ?? pizzaFlavors[0]?.name ?? ""}
+              onConfirm={handlePizzaConfirm}
+            />
           )}
           {isPizza && pizzaNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">

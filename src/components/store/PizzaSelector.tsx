@@ -9,15 +9,15 @@ export type PizzaSelection =
 
 type Props = {
   flavors: PizzaFlavor[];
+  currentFlavor: string;
   onConfirm: (selection: PizzaSelection) => void;
 };
 
 type Mode = "entera" | "mitad" | null;
 
-export default function PizzaSelector({ flavors, onConfirm }: Props) {
+export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Props) {
   const [mode, setMode] = useState<Mode>(null);
   const [sabor, setSabor] = useState<string | null>(null);
-  const [sabor1, setSabor1] = useState<string | null>(null);
   const [sabor2, setSabor2] = useState<string | null>(null);
 
   const available = flavors.filter((f) => f.available);
@@ -29,7 +29,6 @@ export default function PizzaSelector({ flavors, onConfirm }: Props) {
   function handleMode(m: Mode) {
     setMode(m);
     setSabor(null);
-    setSabor1(null);
     setSabor2(null);
   }
 
@@ -37,15 +36,15 @@ export default function PizzaSelector({ flavors, onConfirm }: Props) {
   const previewPrice: number | null =
     mode === "entera" && sabor
       ? getPrice(sabor)
-      : mode === "mitad" && sabor1 && sabor2
-      ? Math.ceil(getPrice(sabor1) / 2 + getPrice(sabor2) / 2)
+      : mode === "mitad" && sabor2
+      ? Math.ceil(getPrice(currentFlavor) / 2 + getPrice(sabor2) / 2)
       : null;
 
   function handleConfirm() {
     if (mode === "entera" && sabor && previewPrice !== null) {
       onConfirm({ type: "entera", sabor, price: previewPrice });
-    } else if (mode === "mitad" && sabor1 && sabor2 && previewPrice !== null) {
-      onConfirm({ type: "mitad", sabor1, sabor2, price: previewPrice });
+    } else if (mode === "mitad" && sabor2 && previewPrice !== null) {
+      onConfirm({ type: "mitad", sabor1: currentFlavor, sabor2, price: previewPrice });
     }
   }
 
@@ -110,63 +109,41 @@ export default function PizzaSelector({ flavors, onConfirm }: Props) {
       {/* Paso 2 y 3: mitad y mitad */}
       {mode === "mitad" && (
         <div className="space-y-4">
+          {/* Sabor 1: fijo, el de la pizza seleccionada */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
               2. Primera mitad
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {available.map((f) => {
-                const disabled = sabor2 === f.name;
-                return (
-                  <button
-                    key={f.name}
-                    onClick={() => !disabled && setSabor1(f.name)}
-                    disabled={disabled}
-                    className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition flex flex-col gap-0.5 ${
-                      sabor1 === f.name
-                        ? "border-brand-500 bg-brand-50 text-brand-600"
-                        : disabled
-                        ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
-                    }`}
-                  >
-                    <span>{sabor1 === f.name && "✓ "}{f.name}</span>
-                    <span className={`text-xs font-normal ${sabor1 === f.name ? "text-brand-400" : disabled ? "text-gray-200" : "text-gray-400"}`}>
-                      ${Math.ceil(f.price / 2).toLocaleString("es-AR", { minimumFractionDigits: 0 })} (½)
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="rounded-2xl px-3 py-2.5 text-sm font-medium border-2 border-brand-500 bg-brand-50 text-brand-600 flex flex-col gap-0.5">
+              <span>✓ {currentFlavor}</span>
+              <span className="text-xs font-normal text-brand-400">
+                ${Math.ceil(getPrice(currentFlavor) / 2).toLocaleString("es-AR", { minimumFractionDigits: 0 })} (½)
+              </span>
             </div>
           </div>
 
+          {/* Sabor 2: elegible, excluyendo el sabor 1 */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
               3. Segunda mitad
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {available.map((f) => {
-                const disabled = sabor1 === f.name;
-                return (
-                  <button
-                    key={f.name}
-                    onClick={() => !disabled && setSabor2(f.name)}
-                    disabled={disabled}
-                    className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition flex flex-col gap-0.5 ${
-                      sabor2 === f.name
-                        ? "border-brand-500 bg-brand-50 text-brand-600"
-                        : disabled
-                        ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
-                    }`}
-                  >
-                    <span>{sabor2 === f.name && "✓ "}{f.name}</span>
-                    <span className={`text-xs font-normal ${sabor2 === f.name ? "text-brand-400" : disabled ? "text-gray-200" : "text-gray-400"}`}>
-                      ${Math.ceil(f.price / 2).toLocaleString("es-AR", { minimumFractionDigits: 0 })} (½)
-                    </span>
-                  </button>
-                );
-              })}
+              {available.filter((f) => f.name !== currentFlavor).map((f) => (
+                <button
+                  key={f.name}
+                  onClick={() => setSabor2(f.name)}
+                  className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition flex flex-col gap-0.5 ${
+                    sabor2 === f.name
+                      ? "border-brand-500 bg-brand-50 text-brand-600"
+                      : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
+                  }`}
+                >
+                  <span>{sabor2 === f.name && "✓ "}{f.name}</span>
+                  <span className={`text-xs font-normal ${sabor2 === f.name ? "text-brand-400" : "text-gray-400"}`}>
+                    ${Math.ceil(f.price / 2).toLocaleString("es-AR", { minimumFractionDigits: 0 })} (½)
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -176,8 +153,8 @@ export default function PizzaSelector({ flavors, onConfirm }: Props) {
       {previewPrice !== null && (
         <div className="flex items-center justify-between text-xs text-gray-500">
           <span>
-            {mode === "mitad" && sabor1 && sabor2
-              ? `½ ${sabor1} + ½ ${sabor2}`
+            {mode === "mitad" && sabor2
+              ? `½ ${currentFlavor} + ½ ${sabor2}`
               : sabor}
           </span>
           <span className="font-semibold text-gray-800">
