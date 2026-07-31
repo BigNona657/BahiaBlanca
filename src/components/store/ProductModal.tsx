@@ -242,7 +242,16 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
           {isPizza && !pizzaNote && (
             <PizzaSelector
               flavors={pizzaFlavors}
-              currentFlavor={pizzaFlavors.find((f) => product.name.toLowerCase().includes(f.name.toLowerCase()))?.name ?? pizzaFlavors[0]?.name ?? ""}
+              currentFlavor={(() => {
+                const productName = product.name.toLowerCase().replace(/^pizza\s*/i, "").trim();
+                const match = pizzaFlavors
+                  .filter((f) => {
+                    const fn = f.name.toLowerCase();
+                    return productName.includes(fn) || fn.includes(productName);
+                  })
+                  .sort((a, b) => b.name.length - a.name.length)[0];
+                return match?.name ?? pizzaFlavors[0]?.name ?? "";
+              })()}
               onConfirm={handlePizzaConfirm}
             />
           )}
