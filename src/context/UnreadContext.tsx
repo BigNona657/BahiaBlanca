@@ -1,15 +1,18 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState } from "react";
+import type { Dispatch, SetStateAction, ReactNode } from "react";
 
 type UnreadCtx = {
   unreadMessages: number;
-  setUnreadMessages: React.Dispatch<React.SetStateAction<number>>;
+  setUnreadMessages: Dispatch<SetStateAction<number>>;
 };
 
-const UnreadContext = createContext<UnreadCtx>({ unreadMessages: 0, setUnreadMessages: () => {} as React.Dispatch<React.SetStateAction<number>> });
+const noop: Dispatch<SetStateAction<number>> = () => {};
 
-export function UnreadProvider({ children }: { children: React.ReactNode }) {
+const UnreadContext = createContext<UnreadCtx>({ unreadMessages: 0, setUnreadMessages: noop });
+
+export function UnreadProvider({ children }: { children: ReactNode }) {
   const [unreadMessages, setUnreadMessages] = useState(0);
   return (
     <UnreadContext.Provider value={{ unreadMessages, setUnreadMessages }}>
