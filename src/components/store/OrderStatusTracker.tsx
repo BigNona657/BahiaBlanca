@@ -25,6 +25,23 @@ export default function OrderStatusTracker({
   const [toast, setToast] = useState<string | null>(null);
   const currentStatus = useRef<OrderStatus>(initialStatus);
 
+  function playStatusBeep() {
+    try {
+      const ctx = new AudioContext();
+      [{ f: 520, t: 0 }, { f: 660, t: 0.2 }].forEach(({ f, t }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + 0.2);
+      });
+    } catch {}
+  }
+
   useEffect(() => {
     // No arrancar polling si ya está en estado final
     if (FINAL_STATUSES.includes(currentStatus.current)) return;
@@ -42,6 +59,7 @@ export default function OrderStatusTracker({
 
           const msg = STATUS_MESSAGES[next];
           if (msg) {
+            playStatusBeep();
             setToast(msg);
             setTimeout(() => setToast(null), 5000);
           }
