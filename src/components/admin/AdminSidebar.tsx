@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useUnread } from "@/context/UnreadContext";
 
 const links = [
   { href: "/admin",            label: "Dashboard",   icon: "📊" },
@@ -16,6 +17,7 @@ const links = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { unreadMessages, setUnreadMessages } = useUnread();
 
   const navLinks = (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -25,7 +27,10 @@ export default function AdminSidebar() {
           <Link
             key={link.href}
             href={link.href}
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              if (link.href === "/admin/orders") setUnreadMessages(0);
+            }}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
               active
                 ? "bg-brand-500 text-white font-medium"
@@ -34,6 +39,11 @@ export default function AdminSidebar() {
           >
             <span className="text-base">{link.icon}</span>
             {link.label}
+            {link.href === "/admin/orders" && unreadMessages > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </span>
+            )}
           </Link>
         );
       })}

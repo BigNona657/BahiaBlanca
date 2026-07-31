@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useUnread } from "@/context/UnreadContext";
 
 type Props = {
   initialCount: number;
@@ -10,6 +11,7 @@ type Props = {
 export default function NewOrderNotifier({ initialCount, initialLastChatId }: Props) {
   const knownCount = useRef(initialCount);
   const knownLastChatId = useRef(initialLastChatId);
+  const { setUnreadMessages } = useUnread();
 
   function playOrderBeep() {
     try {
@@ -31,7 +33,6 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
   function playChatBeep() {
     try {
       const ctx = new AudioContext();
-      // Dos tonos descendentes, más suaves
       [{ f: 660, t: 0 }, { f: 520, t: 0.25 }].forEach(({ f, t }) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -51,7 +52,7 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
       try {
         const [ordersRes, chatRes] = await Promise.all([
           fetch("/api/admin/orders/count", { cache: "no-store" }),
-          fetch("/api/admin/chat/unread", { cache: "no-store" }),
+          fetch(`/api/admin/chat/unread?since=${knownLastChatId.current}`, { cache: "no-store" }),
         ]);
 
         if (ordersRes.ok) {
@@ -63,9 +64,10 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
         }
 
         if (chatRes.ok) {
-          const { lastId } = await chatRes.json();
+          const { lastId, newCount } = await chatRes.json();
           if (lastId > knownLastChatId.current) {
             playChatBeep();
+            setUnreadMessages((prev) => prev + newCount);
             knownLastChatId.current = lastId;
           }
         }
@@ -73,7 +75,7 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
     }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [setUnreadMessages]);
 
   return null;
 }
