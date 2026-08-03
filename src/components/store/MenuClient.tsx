@@ -33,7 +33,6 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
       setActiveProduct(null);
     };
     const handleGoHome = () => {
-      while (window.history.state?.categoryId) window.history.back();
       setSelectedCategory(null);
       setActiveProduct(null);
     };
