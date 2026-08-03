@@ -27,3 +27,26 @@ export function broadcast(orderId: number, status: string) {
     }
   }
 }
+
+// ─── Canal global de menú ─────────────────────────────────────────────────────
+
+const menuSubscribers = new Set<Controller>();
+
+export function subscribeMenu(controller: Controller) {
+  menuSubscribers.add(controller);
+}
+
+export function unsubscribeMenu(controller: Controller) {
+  menuSubscribers.delete(controller);
+}
+
+export function broadcastMenuUpdate() {
+  const data = new TextEncoder().encode(`data: update\n\n`);
+  for (const ctrl of menuSubscribers) {
+    try {
+      ctrl.enqueue(data);
+    } catch {
+      menuSubscribers.delete(ctrl);
+    }
+  }
+}

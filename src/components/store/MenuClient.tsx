@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
 import type { IceCreamFlavor, IceCreamPote, ImperdibleItem, PizzaFlavor } from "@/lib/actions/settings";
@@ -25,6 +26,15 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
   const { data: session } = useSession();
+  const router = useRouter();
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    const es = new EventSource("/api/menu/stream");
+    esRef.current = es;
+    es.onmessage = () => router.refresh();
+    return () => es.close();
+  }, [router]);
 
   // Sincronizar con el historial del navegador para que "atrás" funcione en móvil
   useEffect(() => {
