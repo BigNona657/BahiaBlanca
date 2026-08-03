@@ -32,8 +32,17 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
       setSelectedCategory(e.state?.categoryId ?? null);
       setActiveProduct(null);
     };
+    const handleGoHome = () => {
+      while (window.history.state?.categoryId) window.history.back();
+      setSelectedCategory(null);
+      setActiveProduct(null);
+    };
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("go-home", handleGoHome);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("go-home", handleGoHome);
+    };
   }, []);
 
   function selectCategory(id: number | null) {

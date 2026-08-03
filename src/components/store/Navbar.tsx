@@ -39,7 +39,16 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2"
+          onClick={(e) => {
+            if (window.history.state?.categoryId) {
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent("go-home"));
+            }
+          }}
+        >
           {logoData ? (
             <Image
               src={logoData}
