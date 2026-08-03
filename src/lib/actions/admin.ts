@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql } from "@/lib/db/client";
@@ -170,7 +170,7 @@ export async function createProduct(
     `;
 
     revalidatePath("/admin/products");
-    revalidatePath("/");
+    revalidateTag("menu");
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
@@ -192,7 +192,7 @@ export async function toggleProductAvailability(
       WHERE id = ${productId}
     `;
     revalidatePath("/admin/products");
-    revalidatePath("/");
+    revalidateTag("menu");
     return { success: true };
   } catch {
     return { success: false };
@@ -218,7 +218,7 @@ export async function deleteProduct(
 
     await sql`DELETE FROM products WHERE id = ${productId}`;
     revalidatePath("/admin/products");
-    revalidatePath("/");
+    revalidateTag("menu");
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo eliminar el producto." };
@@ -250,7 +250,7 @@ export async function updateProduct(
     `;
 
     revalidatePath("/admin/products");
-    revalidatePath("/");
+    revalidateTag("menu");
     return { success: true };
   } catch {
     return { success: false, error: "No se pudo actualizar el producto." };
