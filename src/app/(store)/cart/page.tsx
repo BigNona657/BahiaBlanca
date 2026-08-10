@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CartClient from "./CartClient";
+import { getTartaFlavors } from "@/lib/actions/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function CartPage() {
-  return <CartClient />;
+export default async function CartPage() {
+  const tartaFlavors = await getTartaFlavors();
+  return <CartClient tartaFlavors={tartaFlavors} />;
 }

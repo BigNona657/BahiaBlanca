@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { CartItem } from "@/context/CartContext";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
 import TartasSelector, { type TartasSelection } from "./TartasSelector";
+import type { TartaFlavor } from "@/lib/actions/settings";
 
 type Props = {
   item: CartItem;
@@ -12,6 +13,7 @@ type Props = {
   onDecrement: () => void;
   onRemove: () => void;
   onUpdate: (note: string, unitPrice: number) => void;
+  tartaFlavors: TartaFlavor[];
 };
 
 function parseSaboresNote(note: string): Record<string, number> {
@@ -23,7 +25,7 @@ function parseSaboresNote(note: string): Record<string, number> {
   return result;
 }
 
-export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpdate }: Props) {
+export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpdate, tartaFlavors }: Props) {
   const { product, quantity, unitPrice } = item;
   const effectivePrice = unitPrice ?? parseFloat(product.price);
   const subtotal = effectivePrice * quantity;
@@ -124,6 +126,7 @@ export default function CartItemRow({ item, onAdd, onDecrement, onRemove, onUpda
         <div className="mt-3 border border-brand-100 rounded-2xl overflow-hidden bg-brand-50/30">
           <TartasSelector
             pricePerUnit={parseFloat(product.price)}
+            flavors={tartaFlavors}
             initial={item.note ? parseSaboresNote(item.note) : undefined}
             onConfirm={handleTartasUpdate}
           />
