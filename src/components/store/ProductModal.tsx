@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
@@ -136,6 +136,20 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     setMilanesaNote(`${selection.tipo} — ${selection.variante} — ${selection.guarnicion}`);
   }
 
+  const normalize = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  const pizzaCurrentFlavor = useMemo(() => {
+    if (!product) return "";
+    const productName = normalize(product.name.replace(/^pizza\s*/i, "").trim());
+    const match = pizzaFlavors
+      .filter((f) => f.available)
+      .map((f) => ({ f, n: normalize(f.name) }))
+      .filter(({ n }) => productName.includes(n) || n.includes(productName))
+      .sort((a, b) => b.n.length - a.n.length)[0];
+    return match?.f.name ?? pizzaFlavors.find((f) => f.available)?.name ?? "";
+  }, [product?.id, pizzaFlavors]);
+
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
@@ -242,16 +256,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
           {isPizza && !pizzaNote && (
             <PizzaSelector
               flavors={pizzaFlavors}
-              currentFlavor={(() => {
-                const productName = product.name.toLowerCase().replace(/^pizza\s*/i, "").trim();
-                const match = pizzaFlavors
-                  .filter((f) => {
-                    const fn = f.name.toLowerCase();
-                    return productName.includes(fn) || fn.includes(productName);
-                  })
-                  .sort((a, b) => b.name.length - a.name.length)[0];
-                return match?.name ?? pizzaFlavors[0]?.name ?? "";
-              })()}
+              currentFlavor={pizzaCurrentFlavor}
               onConfirm={handlePizzaConfirm}
             />
           )}
