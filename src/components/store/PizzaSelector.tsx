@@ -17,7 +17,6 @@ type Mode = "entera" | "mitad" | null;
 
 export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Props) {
   const [mode, setMode] = useState<Mode>(null);
-  const [sabor, setSabor] = useState<string | null>(null);
 
   const available = flavors.filter((f) => f.available);
 
@@ -26,23 +25,12 @@ export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Pro
   }
 
   function handleMode(m: Mode) {
-    setMode(m);
-    setSabor(m === "entera" ? currentFlavor : null);
-  }
-
-  // Precio calculado en tiempo real
-  const previewPrice: number | null =
-    mode === "entera" && sabor
-      ? getPrice(sabor)
-      : null;
-
-  function handleConfirm() {
-    if (mode === "entera" && sabor && previewPrice !== null) {
-      onConfirm({ type: "entera", sabor, price: previewPrice });
+    if (m === "entera") {
+      onConfirm({ type: "entera", sabor: currentFlavor, price: getPrice(currentFlavor) });
+      return;
     }
+    setMode(m);
   }
-
-  const canConfirm = previewPrice !== null;
 
   return (
     <div className="px-5 pt-4 pb-2 space-y-5">
@@ -72,33 +60,6 @@ export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Pro
           ))}
         </div>
       </div>
-
-      {/* Paso 2: entera */}
-      {mode === "entera" && (
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-            2. Elegí el sabor
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {available.map((f) => (
-              <button
-                key={f.name}
-                onClick={() => setSabor(f.name)}
-                className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition flex flex-col gap-0.5 ${
-                  sabor === f.name
-                    ? "border-brand-500 bg-brand-50 text-brand-600"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
-                }`}
-              >
-                <span>{sabor === f.name && "✓ "}{f.name}</span>
-                <span className={`text-xs font-normal ${sabor === f.name ? "text-brand-400" : "text-gray-400"}`}>
-                  ${f.price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Paso 2 y 3: mitad y mitad */}
       {mode === "mitad" && (
@@ -142,24 +103,6 @@ export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Pro
         </div>
       )}
 
-      {/* Total preview — solo entera */}
-      {mode === "entera" && previewPrice !== null && (
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{sabor}</span>
-          <span className="font-semibold text-gray-800">
-            ${previewPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-          </span>
-        </div>
-      )}
-
-      {canConfirm && (
-        <button
-          onClick={handleConfirm}
-          className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm transition"
-        >
-          Confirmar selección
-        </button>
-      )}
     </div>
   );
 }
