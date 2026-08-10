@@ -1,18 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const SABORES = [
-  "Jamón y queso",
-  "Carne",
-  "Pollo",
-  "Verdura",
-  "Pollo con jamón",
-  "Verdura y carne",
-  "Humita",
-  "Pollo con verdura",
-  "Zapallitos",
-];
+import type { TartaFlavor } from "@/lib/actions/settings";
 
 export type TartasSelection = {
   sabores: Record<string, number>;
@@ -22,13 +11,15 @@ export type TartasSelection = {
 
 type Props = {
   pricePerUnit: number;
+  flavors: TartaFlavor[];
   initial?: Record<string, number>;
   onConfirm: (selection: TartasSelection) => void;
 };
 
-export default function TartasSelector({ pricePerUnit, initial, onConfirm }: Props) {
+export default function TartasSelector({ pricePerUnit, flavors, initial, onConfirm }: Props) {
   const [counts, setCounts] = useState<Record<string, number>>(initial ?? {});
 
+  const available = flavors.filter((f) => f.available);
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
   const calculatedPrice = pricePerUnit * total;
 
@@ -55,15 +46,15 @@ export default function TartasSelector({ pricePerUnit, initial, onConfirm }: Pro
       </p>
 
       <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
-        {SABORES.map((sabor) => {
-          const qty = counts[sabor] ?? 0;
+        {available.map((f) => {
+          const qty = counts[f.name] ?? 0;
           return (
-            <div key={sabor} className="flex items-center justify-between px-4 py-3 bg-white gap-3">
-              <span className="text-sm text-gray-800 flex-1">{sabor}</span>
+            <div key={f.name} className="flex items-center justify-between px-4 py-3 bg-white gap-3">
+              <span className="text-sm text-gray-800 flex-1">{f.name}</span>
               <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-2 py-1 shrink-0">
                 <button
                   type="button"
-                  onClick={() => change(sabor, -1)}
+                  onClick={() => change(f.name, -1)}
                   disabled={qty === 0}
                   className="w-7 h-7 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
                 >
@@ -72,7 +63,7 @@ export default function TartasSelector({ pricePerUnit, initial, onConfirm }: Pro
                 <span className="w-5 text-center text-sm font-semibold text-gray-800">{qty}</span>
                 <button
                   type="button"
-                  onClick={() => change(sabor, 1)}
+                  onClick={() => change(f.name, 1)}
                   className="w-7 h-7 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
                 >
                   +

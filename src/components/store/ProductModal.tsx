@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/types/menu";
-import type { IceCreamFlavor, IceCreamPote, PizzaFlavor } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote, PizzaFlavor, TartaFlavor } from "@/lib/actions/settings";
 import IceCreamSelector, { type IceCreamSelection } from "./IceCreamSelector";
 import EmpanadasSelector, { type EmpanadasSelection } from "./EmpanadasSelector";
 import PizzaSelector, { type PizzaSelection } from "./PizzaSelector";
@@ -21,6 +21,7 @@ type Props = {
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
   pizzaFlavors: PizzaFlavor[];
+  tartaFlavors: TartaFlavor[];
 };
 
 const IS_ICE_CREAM = (p: Product) => p.name.toLowerCase().includes("helado");
@@ -30,7 +31,7 @@ const IS_TARTA     = (p: Product) => p.name.toLowerCase().includes("tarta");
 const IS_PASTA      = (p: Product) => /(sorrentino|raviole|capelleti)/i.test(p.name);
 const IS_MILANESA   = (p: Product) => p.name.toLowerCase().includes("milanesa");
 
-export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, pizzaFlavors }: Props) {
+export default function ProductModal({ product, onClose, onAdd, isAuthenticated, iceCreamFlavors, iceCreamPotes, pizzaFlavors, tartaFlavors }: Props) {
   const [qty, setQty] = useState(1);
   const [iceCreamNote, setIceCreamNote] = useState<string | null>(null);
   const [iceCreamPrice, setIceCreamPrice] = useState<number | null>(null);
@@ -272,7 +273,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
           {/* ── Selector de tartas ── */}
           {isTarta && !tartasNote && (
-            <TartasSelector pricePerUnit={parseFloat(product.price)} onConfirm={handleTartasConfirm} />
+            <TartasSelector pricePerUnit={parseFloat(product.price)} flavors={tartaFlavors} onConfirm={handleTartasConfirm} />
           )}
           {isTarta && tartasNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">

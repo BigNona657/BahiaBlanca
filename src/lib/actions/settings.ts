@@ -81,6 +81,7 @@ export async function getAllSettings(): Promise<{
   iceCreamFlavors: IceCreamFlavor[];
   iceCreamPotes: IceCreamPote[];
   pizzaFlavors: PizzaFlavor[];
+  tartaFlavors: TartaFlavor[];
   imperdibles: ImperdibleItem[];
   dailyMenu: DailyMenu | null;
 }> {
@@ -111,6 +112,9 @@ export async function getAllSettings(): Promise<{
   let pizzaFlavors: PizzaFlavor[] = [];
   try { if (map.pizza_flavors) pizzaFlavors = JSON.parse(map.pizza_flavors); } catch {}
 
+  let tartaFlavors: TartaFlavor[] = DEFAULT_TARTA_FLAVORS;
+  try { if (map.tarta_flavors) tartaFlavors = JSON.parse(map.tarta_flavors); } catch {}
+
   let imperdibles: ImperdibleItem[] = [];
   try {
     if (map.imperdibles) {
@@ -132,7 +136,41 @@ export async function getAllSettings(): Promise<{
     }
   } catch {}
 
-  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, imperdibles, dailyMenu };
+  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, imperdibles, dailyMenu, tartaFlavors };
+}
+
+export type TartaFlavor = {
+  name: string;
+  available: boolean;
+};
+
+const DEFAULT_TARTA_FLAVORS: TartaFlavor[] = [
+  { name: "Carne", available: true },
+  { name: "Verdura", available: true },
+];
+
+export async function getTartaFlavors(): Promise<TartaFlavor[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'tarta_flavors' LIMIT 1`;
+  if (!rows.length) return DEFAULT_TARTA_FLAVORS;
+  try { return JSON.parse(rows[0].value as string) as TartaFlavor[]; } catch { return DEFAULT_TARTA_FLAVORS; }
+}
+
+export async function saveTartaFlavors(
+  flavors: TartaFlavor[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(flavors);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('tarta_flavors', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los sabores." };
+  }
 }
 
 export async function getPizzaFlavors(): Promise<PizzaFlavor[]> {
