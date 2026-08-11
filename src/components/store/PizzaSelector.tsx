@@ -9,7 +9,7 @@ export type PizzaSelection =
 
 type Props = {
   flavors: PizzaFlavor[];
-  currentFlavor: { name: string; price: number };
+  currentFlavor: { name: string; price: number; matchedFlavor: string | null };
   onConfirm: (selection: PizzaSelection) => void;
 };
 
@@ -22,12 +22,6 @@ export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Pro
   const [mode, setMode] = useState<Mode>(null);
 
   const available = flavors.filter((f) => f.available);
-  // Sabor a excluir: el que matchea con el nombre de la card (por nombre exacto o contenido)
-  const excludeName = available.find(
-    (f) => normalize(f.name) === normalize(currentFlavor.name) ||
-            normalize(currentFlavor.name).includes(normalize(f.name)) ||
-            normalize(f.name).includes(normalize(currentFlavor.name))
-  )?.name ?? null;
 
   function handleMode(m: Mode) {
     if (m === "entera") {
@@ -88,7 +82,7 @@ export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Pro
               3. Segunda mitad
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {available.filter((f) => !excludeName || f.name !== excludeName).map((f) => {
+              {available.filter((f) => f.name !== currentFlavor.matchedFlavor).map((f) => {
                 const halfPrice = Math.ceil(currentFlavor.price / 2 + f.price / 2);
                 return (
                   <button

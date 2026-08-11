@@ -149,10 +149,10 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       .map((f) => ({ f, n: normalize(f.name) }))
       .filter(({ n }) => productName.includes(n) || n.includes(productName))
       .sort((a, b) => b.n.length - a.n.length)[0];
-    // Siempre usa el nombre del match o el nombre del producto, pero el precio SIEMPRE del producto
     return {
       name: match?.f.name ?? productName,
       price: parseFloat(product.price),
+      matchedFlavor: match?.f.name ?? null,
     };
   }, [product?.id, pizzaFlavors]);
 
