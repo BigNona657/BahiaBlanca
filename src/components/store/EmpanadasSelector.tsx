@@ -1,17 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const SABORES = [
-  "Carne",
-  "Jamón y queso",
-  "Pollo",
-  "Humita",
-  "Verdura",
-  "Cebolla y queso",
-  "Cantimpalo y queso",
-  "Salame y queso",
-];
+import type { EmpanadasFlavor } from "@/lib/actions/settings";
 
 export type EmpanadasSelection = {
   sabores: Record<string, number>;
@@ -21,14 +11,16 @@ export type EmpanadasSelection = {
 
 type Props = {
   pricePerDozen: number;
+  flavors: EmpanadasFlavor[];
   unitsPerPrice?: number;
   initial?: Record<string, number>;
   onConfirm: (selection: EmpanadasSelection) => void;
 };
 
-export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, initial, onConfirm }: Props) {
+export default function EmpanadasSelector({ pricePerDozen, flavors, unitsPerPrice = 12, initial, onConfirm }: Props) {
   const [counts, setCounts] = useState<Record<string, number>>(initial ?? {});
 
+  const available = flavors.filter((f) => f.available);
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
   const pricePerUnit = pricePerDozen / unitsPerPrice;
   const calculatedPrice = Math.ceil(pricePerUnit * total);
@@ -56,15 +48,15 @@ export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, i
       </p>
 
       <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden">
-        {SABORES.map((sabor) => {
-          const qty = counts[sabor] ?? 0;
+        {available.map((f) => {
+          const qty = counts[f.name] ?? 0;
           return (
-            <div key={sabor} className="flex items-center justify-between px-4 py-3 bg-white gap-3">
-              <span className="text-sm text-gray-800 flex-1">{sabor}</span>
+            <div key={f.name} className="flex items-center justify-between px-4 py-3 bg-white gap-3">
+              <span className="text-sm text-gray-800 flex-1">{f.name}</span>
               <div className="flex items-center gap-2 bg-gray-100 rounded-2xl px-2 py-1 shrink-0">
                 <button
                   type="button"
-                  onClick={() => change(sabor, -1)}
+                  onClick={() => change(f.name, -1)}
                   disabled={qty === 0}
                   className="w-7 h-7 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
                 >
@@ -73,7 +65,7 @@ export default function EmpanadasSelector({ pricePerDozen, unitsPerPrice = 12, i
                 <span className="w-5 text-center text-sm font-semibold text-gray-800">{qty}</span>
                 <button
                   type="button"
-                  onClick={() => change(sabor, 1)}
+                  onClick={() => change(f.name, 1)}
                   className="w-7 h-7 rounded-xl bg-white shadow-sm text-gray-700 font-bold text-lg flex items-center justify-center active:scale-90 transition-transform"
                 >
                   +

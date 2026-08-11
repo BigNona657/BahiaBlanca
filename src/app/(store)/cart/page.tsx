@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import CartClient from "./CartClient";
-import { getTartaFlavors } from "@/lib/actions/settings";
+import { getTartaFlavors, getEmpanadasFlavors } from "@/lib/actions/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CartPage() {
-  const tartaFlavors = await getTartaFlavors();
-  return <CartClient tartaFlavors={tartaFlavors} />;
+  const [tartaFlavors, empanadasFlavors] = await Promise.all([
+    getTartaFlavors(),
+    getEmpanadasFlavors(),
+  ]);
+  return <CartClient tartaFlavors={tartaFlavors} empanadasFlavors={empanadasFlavors} />;
 }

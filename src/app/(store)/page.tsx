@@ -23,7 +23,7 @@ export default async function HomePage() {
     getProductsByCategory(),
     getAllSettings(),
   ]);
-  const { iceCreamFlavors, iceCreamPotes, dailyMenu, imperdibles, pizzaFlavors, tartaFlavors } = settings;
+  const { iceCreamFlavors, iceCreamPotes, dailyMenu, imperdibles, pizzaFlavors, tartaFlavors, empanadasFlavors } = settings;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -92,7 +92,7 @@ export default async function HomePage() {
       {/* Menú del día */}
       {dailyMenu?.active && <DailyMenuCard menu={dailyMenu} />}
 
-      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} imperdibles={imperdibles} pizzaFlavors={pizzaFlavors} tartaFlavors={tartaFlavors} />
+      <MenuClient categories={categories} products={products} iceCreamFlavors={iceCreamFlavors} iceCreamPotes={iceCreamPotes} imperdibles={imperdibles} pizzaFlavors={pizzaFlavors} tartaFlavors={tartaFlavors} empanadasFlavors={empanadasFlavors} />
     </div>
   );
 }

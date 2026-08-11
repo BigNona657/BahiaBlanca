@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Category, Product } from "@/types/menu";
-import type { IceCreamFlavor, IceCreamPote, ImperdibleItem, PizzaFlavor, TartaFlavor } from "@/lib/actions/settings";
+import type { IceCreamFlavor, IceCreamPote, ImperdibleItem, PizzaFlavor, TartaFlavor, EmpanadasFlavor } from "@/lib/actions/settings";
 import { useCart } from "@/context/CartContext";
 import CategoryFilter from "./CategoryFilter";
 import CategoryCard from "./CategoryCard";
@@ -20,9 +20,10 @@ type Props = {
   imperdibles: ImperdibleItem[];
   pizzaFlavors: PizzaFlavor[];
   tartaFlavors: TartaFlavor[];
+  empanadasFlavors: EmpanadasFlavor[];
 };
 
-export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdibles, pizzaFlavors, tartaFlavors }: Props) {
+export default function MenuClient({ categories, products, iceCreamFlavors, iceCreamPotes, imperdibles, pizzaFlavors, tartaFlavors, empanadasFlavors }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
@@ -145,6 +146,7 @@ export default function MenuClient({ categories, products, iceCreamFlavors, iceC
         iceCreamPotes={iceCreamPotes}
         pizzaFlavors={pizzaFlavors}
         tartaFlavors={tartaFlavors}
+        empanadasFlavors={empanadasFlavors}
       />
     </div>
   );

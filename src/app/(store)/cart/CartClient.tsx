@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 import CartItemRow from "@/components/store/CartItemRow";
 import { createOrder, type CheckoutFormData } from "@/lib/actions/orders";
-import type { TartaFlavor } from "@/lib/actions/settings";
+import type { TartaFlavor, EmpanadasFlavor } from "@/lib/actions/settings";
 
 const ALIAS = "big-nona";
 const TAKEAWAY_ADDRESS = "Fatone 657";
@@ -23,7 +23,7 @@ const INITIAL_FORM: CheckoutFormData = {
   paymentMethod: "TRANSFER",
 };
 
-export default function CartClient({ tartaFlavors }: { tartaFlavors: TartaFlavor[] }) {
+export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFlavors: TartaFlavor[]; empanadasFlavors: EmpanadasFlavor[] }) {
   const { items, totalItems, totalPrice, addToCart, decrementFromCart, removeFromCart, updateItem, clearCart } =
     useCart();
   const { data: session } = useSession();
@@ -118,6 +118,7 @@ export default function CartClient({ tartaFlavors }: { tartaFlavors: TartaFlavor
                 onRemove={() => removeFromCart(item.product.id, item.note)}
                 onUpdate={(note, unitPrice) => updateItem(item.product.id, item.note, note, unitPrice)}
                 tartaFlavors={tartaFlavors}
+                empanadasFlavors={empanadasFlavors}
               />
             ))}
 

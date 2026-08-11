@@ -82,6 +82,7 @@ export async function getAllSettings(): Promise<{
   iceCreamPotes: IceCreamPote[];
   pizzaFlavors: PizzaFlavor[];
   tartaFlavors: TartaFlavor[];
+  empanadasFlavors: EmpanadasFlavor[];
   imperdibles: ImperdibleItem[];
   dailyMenu: DailyMenu | null;
 }> {
@@ -115,6 +116,9 @@ export async function getAllSettings(): Promise<{
   let tartaFlavors: TartaFlavor[] = DEFAULT_TARTA_FLAVORS;
   try { if (map.tarta_flavors) tartaFlavors = JSON.parse(map.tarta_flavors); } catch {}
 
+  let empanadasFlavors: EmpanadasFlavor[] = DEFAULT_EMPANADAS_FLAVORS;
+  try { if (map.empanadas_flavors) empanadasFlavors = JSON.parse(map.empanadas_flavors); } catch {}
+
   let imperdibles: ImperdibleItem[] = [];
   try {
     if (map.imperdibles) {
@@ -136,7 +140,7 @@ export async function getAllSettings(): Promise<{
     }
   } catch {}
 
-  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, imperdibles, dailyMenu, tartaFlavors };
+  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, tartaFlavors, empanadasFlavors, imperdibles, dailyMenu };
 }
 
 export type TartaFlavor = {
@@ -148,6 +152,46 @@ const DEFAULT_TARTA_FLAVORS: TartaFlavor[] = [
   { name: "Carne", available: true },
   { name: "Verdura", available: true },
 ];
+
+export type EmpanadasFlavor = {
+  name: string;
+  available: boolean;
+};
+
+const DEFAULT_EMPANADAS_FLAVORS: EmpanadasFlavor[] = [
+  { name: "Carne", available: true },
+  { name: "Jamón y queso", available: true },
+  { name: "Pollo", available: true },
+  { name: "Humita", available: true },
+  { name: "Verdura", available: true },
+  { name: "Cebolla y queso", available: true },
+  { name: "Cantimpalo y queso", available: true },
+  { name: "Salame y queso", available: true },
+];
+
+export async function getEmpanadasFlavors(): Promise<EmpanadasFlavor[]> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'empanadas_flavors' LIMIT 1`;
+  if (!rows.length) return DEFAULT_EMPANADAS_FLAVORS;
+  try { return JSON.parse(rows[0].value as string) as EmpanadasFlavor[]; } catch { return DEFAULT_EMPANADAS_FLAVORS; }
+}
+
+export async function saveEmpanadasFlavors(
+  flavors: EmpanadasFlavor[]
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(flavors);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('empanadas_flavors', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar los sabores." };
+  }
+}
 
 export async function getTartaFlavors(): Promise<TartaFlavor[]> {
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'tarta_flavors' LIMIT 1`;
