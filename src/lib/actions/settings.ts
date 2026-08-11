@@ -83,6 +83,7 @@ export async function getAllSettings(): Promise<{
   pizzaFlavors: PizzaFlavor[];
   tartaFlavors: TartaFlavor[];
   empanadasFlavors: EmpanadasFlavor[];
+  milanesaSettings: MilanesaSettings;
   imperdibles: ImperdibleItem[];
   dailyMenu: DailyMenu | null;
 }> {
@@ -119,6 +120,9 @@ export async function getAllSettings(): Promise<{
   let empanadasFlavors: EmpanadasFlavor[] = DEFAULT_EMPANADAS_FLAVORS;
   try { if (map.empanadas_flavors) empanadasFlavors = JSON.parse(map.empanadas_flavors); } catch {}
 
+  let milanesaSettings: MilanesaSettings = DEFAULT_MILANESA_SETTINGS;
+  try { if (map.milanesa_settings) milanesaSettings = JSON.parse(map.milanesa_settings); } catch {}
+
   let imperdibles: ImperdibleItem[] = [];
   try {
     if (map.imperdibles) {
@@ -140,7 +144,7 @@ export async function getAllSettings(): Promise<{
     }
   } catch {}
 
-  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, tartaFlavors, empanadasFlavors, imperdibles, dailyMenu };
+  return { appSettings, iceCreamFlavors, iceCreamPotes, pizzaFlavors, tartaFlavors, empanadasFlavors, milanesaSettings, imperdibles, dailyMenu };
 }
 
 export type TartaFlavor = {
@@ -152,6 +156,58 @@ const DEFAULT_TARTA_FLAVORS: TartaFlavor[] = [
   { name: "Carne", available: true },
   { name: "Verdura", available: true },
 ];
+
+export type MilanesaOption = { name: string; available: boolean };
+
+export type MilanesaSettings = {
+  tipos: MilanesaOption[];
+  variantes: MilanesaOption[];
+  guarniciones: MilanesaOption[];
+};
+
+const DEFAULT_MILANESA_SETTINGS: MilanesaSettings = {
+  tipos: [
+    { name: "De pollo", available: true },
+    { name: "De carne", available: true },
+  ],
+  variantes: [
+    { name: "Simple", available: true },
+    { name: "Simple con queso", available: true },
+    { name: "Napolitana", available: true },
+    { name: "A caballo", available: true },
+  ],
+  guarniciones: [
+    { name: "Papas fritas", available: true },
+    { name: "Puré de papas", available: true },
+    { name: "Puré mixto", available: true },
+    { name: "Ensalada", available: true },
+    { name: "Sola", available: true },
+  ],
+};
+
+export async function getMilanesaSettings(): Promise<MilanesaSettings> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'milanesa_settings' LIMIT 1`;
+  if (!rows.length) return DEFAULT_MILANESA_SETTINGS;
+  try { return JSON.parse(rows[0].value as string) as MilanesaSettings; } catch { return DEFAULT_MILANESA_SETTINGS; }
+}
+
+export async function saveMilanesaSettings(
+  data: MilanesaSettings
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(data);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('milanesa_settings', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar la configuración." };
+  }
+}
 
 export type EmpanadasFlavor = {
   name: string;

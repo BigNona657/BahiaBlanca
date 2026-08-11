@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const TIPOS = [
-  { label: "De pollo", emoji: "🐔" },
-  { label: "De carne", emoji: "🥩" },
-];
-const VARIANTES = ["Simple", "Simple con queso", "Napolitana", "A caballo"];
-const GUARNICIONES = ["Papas fritas", "Puré de papas", "Puré mixto", "Ensalada", "Sola"];
+import type { MilanesaSettings } from "@/lib/actions/settings";
 
 export type MilanesaSelection = {
   tipo: string;
@@ -18,20 +12,20 @@ export type MilanesaSelection = {
 
 type Props = {
   price: number;
+  settings: MilanesaSettings;
   onConfirm: (selection: MilanesaSelection) => void;
 };
 
-export default function MilanesaSelector({ price, onConfirm }: Props) {
+export default function MilanesaSelector({ price, settings, onConfirm }: Props) {
   const [tipo, setTipo] = useState<string | null>(null);
   const [variante, setVariante] = useState<string | null>(null);
   const [guarnicion, setGuarnicion] = useState<string | null>(null);
 
-  const canConfirm = !!tipo && !!variante && !!guarnicion;
+  const tipos = settings.tipos.filter((t) => t.available);
+  const variantes = settings.variantes.filter((v) => v.available);
+  const guarniciones = settings.guarniciones.filter((g) => g.available);
 
-  function handleConfirm() {
-    if (!tipo || !variante || !guarnicion) return;
-    onConfirm({ tipo, variante, guarnicion, price });
-  }
+  const canConfirm = !!tipo && !!variante && !!guarnicion;
 
   return (
     <div className="px-5 pt-4 pb-2 space-y-5">
@@ -42,18 +36,17 @@ export default function MilanesaSelector({ price, onConfirm }: Props) {
           1. ¿De qué la querés?
         </p>
         <div className="grid grid-cols-2 gap-2">
-          {TIPOS.map(({ label, emoji }) => (
+          {tipos.map(({ name }) => (
             <button
-              key={label}
-              onClick={() => setTipo(label)}
+              key={name}
+              onClick={() => { setTipo(name); setVariante(null); setGuarnicion(null); }}
               className={`rounded-2xl py-3 px-2 text-sm font-semibold border-2 transition flex flex-col items-center gap-1 ${
-                tipo === label
+                tipo === name
                   ? "border-brand-500 bg-brand-50 text-brand-600"
                   : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
               }`}
             >
-              <span className="text-2xl">{emoji}</span>
-              <span>{label}</span>
+              <span>{name}</span>
             </button>
           ))}
         </div>
@@ -66,17 +59,17 @@ export default function MilanesaSelector({ price, onConfirm }: Props) {
             2. ¿Cómo la querés?
           </p>
           <div className="grid grid-cols-1 gap-2">
-            {VARIANTES.map((v) => (
+            {variantes.map(({ name }) => (
               <button
-                key={v}
-                onClick={() => setVariante(v)}
+                key={name}
+                onClick={() => { setVariante(name); setGuarnicion(null); }}
                 className={`rounded-2xl px-4 py-2.5 text-sm font-medium border-2 text-left transition ${
-                  variante === v
+                  variante === name
                     ? "border-brand-500 bg-brand-50 text-brand-600"
                     : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
                 }`}
               >
-                {variante === v && "✓ "}{v}
+                {variante === name && "✓ "}{name}
               </button>
             ))}
           </div>
@@ -90,40 +83,38 @@ export default function MilanesaSelector({ price, onConfirm }: Props) {
             3. Elegí la guarnición
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {GUARNICIONES.map((g) => (
+            {guarniciones.map(({ name }) => (
               <button
-                key={g}
-                onClick={() => setGuarnicion(g)}
+                key={name}
+                onClick={() => setGuarnicion(name)}
                 className={`rounded-2xl px-3 py-2.5 text-sm font-medium border-2 text-left transition ${
-                  guarnicion === g
+                  guarnicion === name
                     ? "border-brand-500 bg-brand-50 text-brand-600"
                     : "border-gray-200 bg-white text-gray-700 hover:border-brand-300"
                 }`}
               >
-                {guarnicion === g && "✓ "}{g}
+                {guarnicion === name && "✓ "}{name}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Preview */}
       {canConfirm && (
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{tipo} — {variante} — {guarnicion}</span>
-          <span className="font-semibold text-gray-800">
-            ${price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-          </span>
-        </div>
-      )}
-
-      {canConfirm && (
-        <button
-          onClick={handleConfirm}
-          className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm transition"
-        >
-          Confirmar selección
-        </button>
+        <>
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>{tipo} — {variante} — {guarnicion}</span>
+            <span className="font-semibold text-gray-800">
+              ${price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+            </span>
+          </div>
+          <button
+            onClick={() => onConfirm({ tipo: tipo!, variante: variante!, guarnicion: guarnicion!, price })}
+            className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white rounded-2xl py-3 font-semibold text-sm transition"
+          >
+            Confirmar selección
+          </button>
+        </>
       )}
     </div>
   );

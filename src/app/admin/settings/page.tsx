@@ -1,4 +1,4 @@
-import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles, getPizzaFlavors, getEmpanadasFlavors } from "@/lib/actions/settings";
+import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles, getPizzaFlavors, getEmpanadasFlavors, getMilanesaSettings } from "@/lib/actions/settings";
 import SettingsForm from "@/components/admin/SettingsForm";
 import IceCreamFlavorsForm from "@/components/admin/IceCreamFlavorsForm";
 import IceCreamPotesForm from "@/components/admin/IceCreamPotesForm";
@@ -6,11 +6,12 @@ import DailyMenuForm from "@/components/admin/DailyMenuForm";
 import ImperdiblesForm from "@/components/admin/ImperdiblesForm";
 import PizzaFlavorsForm from "@/components/admin/PizzaFlavorsForm";
 import EmpanadasFlavorsForm from "@/components/admin/EmpanadasFlavorsForm";
+import MilanesaSettingsForm from "@/components/admin/MilanesaSettingsForm";
 
 export const revalidate = 0;
 
 export default async function AdminSettingsPage() {
-  const [settings, flavors, potes, dailyMenus, imperdibles, pizzaFlavors, empanadasFlavors] = await Promise.all([
+  const [settings, flavors, potes, dailyMenus, imperdibles, pizzaFlavors, empanadasFlavors, milanesaSettings] = await Promise.all([
     getAppSettings(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
@@ -18,6 +19,7 @@ export default async function AdminSettingsPage() {
     getImperdibles(),
     getPizzaFlavors(),
     getEmpanadasFlavors(),
+    getMilanesaSettings(),
   ]);
 
   return (
@@ -47,6 +49,12 @@ export default async function AdminSettingsPage() {
         <h2 className="text-base font-bold text-gray-700 mb-1">Precios de potes 🍨</h2>
         <p className="text-xs text-gray-400 mb-4">Precio de cada tamaño de pote de helado.</p>
         <IceCreamPotesForm initial={potes} />
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-5">
+        <h2 className="text-base font-bold text-gray-700 mb-1">Milanesas 🥩</h2>
+        <p className="text-xs text-gray-400 mb-4">Tipos, variantes y guarniciones disponibles.</p>
+        <MilanesaSettingsForm initial={milanesaSettings} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-5">
