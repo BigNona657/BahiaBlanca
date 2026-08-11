@@ -4,6 +4,8 @@ import { getAllSettings } from "@/lib/actions/settings";
 import MenuClient from "@/components/store/MenuClient";
 import DailyMenuCard from "@/components/store/DailyMenuCard";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Menú de comida casera y helados | BigNona Bahía Blanca",
   description: "Pedí comida casera a domicilio en Bahía Blanca. Delivery y take away desde Fatone 657. Helados, menú del día y más.",
