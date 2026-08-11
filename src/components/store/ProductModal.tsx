@@ -96,10 +96,10 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
       return;
     }
     const isEmp   = IS_EMPANADA(product);
-    const isTarta = IS_TARTA(product);
+    const isTartaLocal = IS_TARTA(product) && !tartaEsSaboreada;
     const note = iceCreamNote ?? empanadasNote ?? pizzaNote ?? tartasNote ?? pastaNote ?? milanesaNote ?? undefined;
     const unitPrice = empanadasPrice ?? tartasPrice ?? pizzaPrice ?? (IS_ICE_CREAM(product) && iceCreamPrice !== null ? iceCreamPrice : undefined);
-    onAdd(product, (isEmp || isTarta) ? 1 : qty, note, unitPrice);
+    onAdd(product, (isEmp || isTartaLocal) ? 1 : qty, note, unitPrice);
     onClose();
   }, [product, qty, onAdd, onClose, isAuthenticated, router, iceCreamNote, iceCreamPrice, empanadasNote, empanadasPrice, pizzaNote, pizzaPrice, tartasNote, tartasPrice, pastaNote, milanesaNote]);
 
@@ -151,12 +151,19 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     return match?.f.name ?? pizzaFlavors.find((f) => f.available)?.name ?? "";
   }, [product?.id, pizzaFlavors]);
 
+  // Si la tarta ya tiene el sabor en el nombre del producto, no necesita selector
+  const tartaEsSaboreada = useMemo(() => {
+    if (!product) return false;
+    const productName = normalize(product.name);
+    return tartaFlavors.some((f) => productName.includes(normalize(f.name)));
+  }, [product?.id, tartaFlavors]);
+
   if (!product) return null;
 
   const isIceCream = IS_ICE_CREAM(product);
   const isEmpanada = IS_EMPANADA(product);
   const isPizza    = IS_PIZZA(product);
-  const isTarta    = IS_TARTA(product);
+  const isTarta    = IS_TARTA(product) && !tartaEsSaboreada;
   const isPasta     = IS_PASTA(product);
   const isMilanesa  = IS_MILANESA(product);
 
