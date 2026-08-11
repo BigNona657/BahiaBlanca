@@ -142,14 +142,14 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const pizzaCurrentFlavor = useMemo(() => {
-    if (!product) return "";
+    if (!product) return null;
     const productName = normalize(product.name.replace(/^pizza\s*/i, "").trim());
     const match = pizzaFlavors
       .filter((f) => f.available)
       .map((f) => ({ f, n: normalize(f.name) }))
       .filter(({ n }) => productName.includes(n) || n.includes(productName))
       .sort((a, b) => b.n.length - a.n.length)[0];
-    return match?.f.name ?? pizzaFlavors.find((f) => f.available)?.name ?? "";
+    return match?.f.name ?? null;
   }, [product?.id, pizzaFlavors]);
 
   // Si la tarta ya tiene el sabor en el nombre del producto, no necesita selector
