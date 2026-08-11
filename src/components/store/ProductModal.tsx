@@ -142,13 +142,19 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const pizzaCurrentFlavor = useMemo(() => {
-    if (!product) return { name: "", price: 0 };
+    if (!product) return { name: "", price: 0, matchedFlavor: null };
+    const STOPWORDS = new Set(["con", "y", "de", "la", "el", "los", "las", "al"]);
     const productName = normalize(product.name.replace(/^pizza\s*/i, "").trim());
+    const productWords = productName.split(/\s+/).filter((w) => w.length > 2 && !STOPWORDS.has(w));
     const match = pizzaFlavors
       .filter((f) => f.available)
-      .map((f) => ({ f, n: normalize(f.name) }))
-      .filter(({ n }) => productName.includes(n) || n.includes(productName))
-      .sort((a, b) => b.n.length - a.n.length)[0];
+      .map((f) => {
+        const flavorWords = normalize(f.name).split(/\s+/).filter((w) => w.length > 2 && !STOPWORDS.has(w));
+        const hits = flavorWords.filter((w) => productWords.some((pw) => pw.includes(w) || w.includes(pw))).length;
+        return { f, score: flavorWords.length > 0 ? hits / flavorWords.length : 0 };
+      })
+      .filter(({ score }) => score >= 0.5)
+      .sort((a, b) => b.score - a.score)[0];
     return {
       name: match?.f.name ?? productName,
       price: parseFloat(product.price),

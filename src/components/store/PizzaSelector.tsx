@@ -15,9 +15,6 @@ type Props = {
 
 type Mode = "entera" | "mitad" | null;
 
-const normalize = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
 export default function PizzaSelector({ flavors, currentFlavor, onConfirm }: Props) {
   const [mode, setMode] = useState<Mode>(null);
 
