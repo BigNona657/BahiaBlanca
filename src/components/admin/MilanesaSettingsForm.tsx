@@ -7,7 +7,6 @@ type SectionKey = keyof MilanesaSettings;
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "tipos", label: "Tipos" },
-  { key: "variantes", label: "Variantes" },
   { key: "guarniciones", label: "Guarniciones" },
 ];
 

@@ -136,7 +136,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
   }
 
   function handleMilanesaConfirm(selection: MilanesaSelection) {
-    setMilanesaNote(`${selection.tipo} — ${selection.variante} — ${selection.guarnicion}`);
+    setMilanesaNote(`${selection.tipo}${selection.aCaballo ? " a caballo" : ""}`);
   }
 
   const normalize = (s: string) =>
