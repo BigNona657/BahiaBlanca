@@ -7,12 +7,23 @@ type SectionKey = keyof MilanesaSettings;
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "tipos", label: "Tipos" },
-  { key: "guarniciones", label: "Guarniciones" },
 ];
 
 export default function MilanesaSettingsForm({ initial }: { initial: MilanesaSettings }) {
   const [data, setData] = useState<MilanesaSettings>(initial);
   const [inputs, setInputs] = useState<Record<SectionKey, string>>({ tipos: "", variantes: "", guarniciones: "" });
+  const [aCaballo, setACaballo] = useState(initial.variantes?.some((v) => v.name === "A caballo" && v.available) ?? true);
+
+  function toggleACaballo() {
+    setACaballo((v) => !v);
+    setData((prev) => ({
+      ...prev,
+      variantes: prev.variantes.map((v) =>
+        v.name === "A caballo" ? { ...v, available: !v.available } : v
+      ),
+    }));
+    setMsg(null);
+  }
   const [isPending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -101,6 +112,25 @@ export default function MilanesaSettingsForm({ initial }: { initial: MilanesaSet
           )}
         </div>
       ))}
+
+      {/* A caballo */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">A caballo</p>
+        <div className="border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 bg-white">
+            <span className={`text-sm flex-1 ${aCaballo ? "text-gray-800" : "text-gray-400 line-through"}`}>
+              A caballo 🍳
+            </span>
+            <button
+              type="button"
+              onClick={toggleACaballo}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${aCaballo ? "bg-brand-500" : "bg-gray-200"}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aCaballo ? "translate-x-6" : "translate-x-1"}`} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {msg && (
         <p className={`text-sm rounded-xl px-3 py-2 ${msg.ok ? "bg-green-50 text-green-700" : "bg-red-50 text-red-500"}`}>
