@@ -21,10 +21,12 @@ export default function MilanesaSelector({ price, settings, onConfirm }: Props) 
   const [aCaballo, setACaballo] = useState(false);
 
   const tipos = settings.tipos.filter((t) => t.available);
+  const aCaballoExtra = settings.variantes?.find((v) => v.name === "A caballo")?.price ?? 0;
 
   function handleConfirm() {
     if (!tipo) return;
-    onConfirm({ tipo, aCaballo, guarnicion: "", price });
+    const finalPrice = price + (aCaballo ? aCaballoExtra : 0);
+    onConfirm({ tipo, aCaballo, guarnicion: "", price: finalPrice });
   }
 
   return (
@@ -67,7 +69,9 @@ export default function MilanesaSelector({ price, settings, onConfirm }: Props) 
             }`}
           >
             <span>{aCaballo && "✓ "}A caballo 🍳</span>
-            <span className="text-xs text-gray-400">{aCaballo ? "Incluido" : "Agregar"}</span>
+            <span className="text-xs text-gray-400">
+              {aCaballo ? "Incluido" : aCaballoExtra > 0 ? `+ $${aCaballoExtra.toLocaleString("es-AR", { minimumFractionDigits: 0 })}` : "Agregar"}
+            </span>
           </button>
         </div>
       )}
@@ -78,7 +82,7 @@ export default function MilanesaSelector({ price, settings, onConfirm }: Props) 
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{tipo}{aCaballo ? " a caballo" : ""}</span>
             <span className="font-semibold text-gray-800">
-              ${price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+              ${(price + (aCaballo ? aCaballoExtra : 0)).toLocaleString("es-AR", { minimumFractionDigits: 0 })}
             </span>
           </div>
           <button

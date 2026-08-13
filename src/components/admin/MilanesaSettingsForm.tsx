@@ -13,6 +13,9 @@ export default function MilanesaSettingsForm({ initial }: { initial: MilanesaSet
   const [data, setData] = useState<MilanesaSettings>(initial);
   const [inputs, setInputs] = useState<Record<SectionKey, string>>({ tipos: "", variantes: "", guarniciones: "" });
   const [aCaballo, setACaballo] = useState(initial.variantes?.some((v) => v.name === "A caballo" && v.available) ?? true);
+  const [aCaballoPrice, setACaballoPrice] = useState<string>(
+    String(initial.variantes?.find((v) => v.name === "A caballo")?.price ?? 0)
+  );
 
   function toggleACaballo() {
     setACaballo((v) => !v);
@@ -20,6 +23,18 @@ export default function MilanesaSettingsForm({ initial }: { initial: MilanesaSet
       ...prev,
       variantes: prev.variantes.map((v) =>
         v.name === "A caballo" ? { ...v, available: !v.available } : v
+      ),
+    }));
+    setMsg(null);
+  }
+
+  function handleACaballoPrice(val: string) {
+    setACaballoPrice(val);
+    const num = parseFloat(val) || 0;
+    setData((prev) => ({
+      ...prev,
+      variantes: prev.variantes.map((v) =>
+        v.name === "A caballo" ? { ...v, price: num } : v
       ),
     }));
     setMsg(null);
@@ -121,13 +136,26 @@ export default function MilanesaSettingsForm({ initial }: { initial: MilanesaSet
             <span className={`text-sm flex-1 ${aCaballo ? "text-gray-800" : "text-gray-400 line-through"}`}>
               A caballo 🍳
             </span>
-            <button
-              type="button"
-              onClick={toggleACaballo}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${aCaballo ? "bg-brand-500" : "bg-gray-200"}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aCaballo ? "translate-x-6" : "translate-x-1"}`} />
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={aCaballoPrice}
+                  onChange={(e) => handleACaballoPrice(e.target.value)}
+                  className="w-20 border border-gray-200 rounded-xl px-2 py-1.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-400 text-right"
+                  placeholder="0"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={toggleACaballo}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${aCaballo ? "bg-brand-500" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${aCaballo ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

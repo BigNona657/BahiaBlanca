@@ -157,7 +157,7 @@ const DEFAULT_TARTA_FLAVORS: TartaFlavor[] = [
   { name: "Verdura", available: true },
 ];
 
-export type MilanesaOption = { name: string; available: boolean };
+export type MilanesaOption = { name: string; available: boolean; price?: number };
 
 export type MilanesaSettings = {
   tipos: MilanesaOption[];
