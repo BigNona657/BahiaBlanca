@@ -3,6 +3,7 @@
 import { sql } from "@/lib/db/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { broadcastChatMessage } from "@/lib/sse";
 
 export type ChatMessage = {
   id: number;
@@ -11,7 +12,7 @@ export type ChatMessage = {
   created_at: string;
 };
 
-const CHAT_EXPIRY_MS = 45 * 60 * 1000; // 45 minutos
+export const CHAT_EXPIRY_MS = 10 * 60 * 1000; // 10 minutos
 
 export async function isChatOpen(orderCreatedAt: string): Promise<boolean> {
   return Date.now() - new Date(orderCreatedAt).getTime() < CHAT_EXPIRY_MS;
@@ -23,7 +24,6 @@ export async function getChatMessages(orderId: number): Promise<ChatMessage[]> {
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // Verificar acceso: admin ve todo, cliente solo sus pedidos
   if (!isAdmin) {
     const rows = await sql`SELECT id FROM orders WHERE id = ${orderId} AND user_id = ${session.user.id} LIMIT 1`;
     if (!rows.length) return [];
@@ -51,7 +51,6 @@ export async function sendChatMessage(
 
   const isAdmin = session.user.role === "ADMIN";
 
-  // Verificar acceso y obtener created_at del pedido
   const orderRows = isAdmin
     ? await sql`SELECT created_at FROM orders WHERE id = ${orderId} LIMIT 1`
     : await sql`SELECT created_at FROM orders WHERE id = ${orderId} AND user_id = ${session.user.id} LIMIT 1`;
@@ -63,10 +62,22 @@ export async function sendChatMessage(
   }
 
   const sender = isAdmin ? "admin" : "client";
-  await sql`
+
+  const inserted = await sql`
     INSERT INTO order_messages (order_id, sender, text)
     VALUES (${orderId}, ${sender}, ${trimmed})
+    RETURNING id, sender, text, created_at
   `;
+
+  const msg = inserted[0] as ChatMessage;
+
+  // Propagar el mensaje a todos los suscriptores SSE de esta orden
+  broadcastChatMessage(orderId, {
+    id: msg.id,
+    sender: msg.sender,
+    text: msg.text,
+    created_at: String(msg.created_at),
+  });
 
   return { success: true };
 }

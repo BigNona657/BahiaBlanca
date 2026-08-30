@@ -43,36 +43,31 @@ export default function OrderStatusTracker({
   }
 
   useEffect(() => {
-    // No arrancar polling si ya está en estado final
     if (FINAL_STATUSES.includes(currentStatus.current)) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/orders/${orderId}/stream`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        const next = data.status as OrderStatus;
+    const es = new EventSource(`/api/orders/${orderId}/stream`);
 
-        if (next !== currentStatus.current) {
-          currentStatus.current = next;
-          setStatus(next);
+    es.addEventListener("status", (e: MessageEvent) => {
+      const next = e.data as OrderStatus;
+      if (next === currentStatus.current) return;
+      currentStatus.current = next;
+      setStatus(next);
 
-          const msg = STATUS_MESSAGES[next];
-          if (msg) {
-            playStatusBeep();
-            setToast(msg);
-            setTimeout(() => setToast(null), 5000);
-          }
-
-          // Detener polling al llegar a estado final
-          if (FINAL_STATUSES.includes(next)) clearInterval(interval);
-        }
-      } catch {
-        // Error de red: ignorar, reintentar en el próximo tick
+      const msg = STATUS_MESSAGES[next];
+      if (msg) {
+        playStatusBeep();
+        setToast(msg);
+        setTimeout(() => setToast(null), 5000);
       }
-    }, 10_000);
 
-    return () => clearInterval(interval);
+      if (FINAL_STATUSES.includes(next)) es.close();
+    });
+
+    es.onerror = () => {
+      // El browser reintenta automáticamente
+    };
+
+    return () => es.close();
   }, [orderId]);
 
   return (

@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { getChatMessages, sendChatMessage, type ChatMessage } from "@/lib/actions/chat";
-
-const CHAT_EXPIRY_MS = 45 * 60 * 1000;
-const POLL_INTERVAL = 5_000;
+import { getChatMessages, sendChatMessage, CHAT_EXPIRY_MS, type ChatMessage } from "@/lib/actions/chat";
 
 type Props = {
   orderId: number;
@@ -20,37 +17,67 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
   const [isPending, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const esRef = useRef<EventSource | null>(null);
 
-  // Calcular expiración
+  // Carga inicial de mensajes históricos
   useEffect(() => {
-    function update() {
-      const elapsed = Date.now() - new Date(orderCreatedAt).getTime();
-      const remaining = CHAT_EXPIRY_MS - elapsed;
+    getChatMessages(orderId).then(setMessages);
+  }, [orderId]);
+
+  // Temporizador de expiración
+  useEffect(() => {
+    const createdAt = new Date(orderCreatedAt).getTime();
+
+    function tick() {
+      const remaining = CHAT_EXPIRY_MS - (Date.now() - createdAt);
       if (remaining <= 0) {
         setExpired(true);
         setTimeLeft("Expirado");
+        esRef.current?.close();
         return;
       }
       const mins = Math.floor(remaining / 60000);
       const secs = Math.floor((remaining % 60000) / 1000);
       setTimeLeft(`${mins}:${secs.toString().padStart(2, "0")}`);
     }
-    update();
-    const t = setInterval(update, 1000);
+
+    tick();
+    const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [orderCreatedAt]);
 
-  // Polling de mensajes
+  // Conexión SSE
   useEffect(() => {
-    async function fetchMessages() {
-      const msgs = await getChatMessages(orderId);
-      setMessages(msgs);
+    const createdAt = new Date(orderCreatedAt).getTime();
+    const alreadyExpired = Date.now() - createdAt >= CHAT_EXPIRY_MS;
+    if (alreadyExpired) {
+      setExpired(true);
+      return;
     }
-    fetchMessages();
-    if (expired) return;
-    const t = setInterval(fetchMessages, POLL_INTERVAL);
-    return () => clearInterval(t);
-  }, [orderId, expired]);
+
+    const es = new EventSource(`/api/orders/${orderId}/stream`);
+    esRef.current = es;
+
+    es.addEventListener("chat", (e: MessageEvent) => {
+      const msg: ChatMessage = JSON.parse(e.data);
+      setMessages((prev) => {
+        // Evitar duplicados si el mensaje ya fue agregado optimistamente
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    });
+
+    es.addEventListener("chat-expired", () => {
+      setExpired(true);
+      es.close();
+    });
+
+    es.onerror = () => {
+      // El browser reintenta automáticamente; no hacer nada
+    };
+
+    return () => es.close();
+  }, [orderId, orderCreatedAt]);
 
   // Scroll al último mensaje
   useEffect(() => {
@@ -62,15 +89,30 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
     if (!input.trim() || expired) return;
     const text = input;
     setInput("");
+
+    // Inserción optimista
+    const optimistic: ChatMessage = {
+      id: Date.now(), // id temporal
+      sender: senderRole,
+      text,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
     startTransition(async () => {
-      await sendChatMessage(orderId, text);
-      const msgs = await getChatMessages(orderId);
-      setMessages(msgs);
+      const result = await sendChatMessage(orderId, text);
+      if (!result.success) {
+        // Revertir si falló
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        setInput(text);
+      }
+      // El mensaje real llega por SSE y reemplaza el optimista via dedup
     });
+
     inputRef.current?.focus();
   }
 
-  const isExpiringSoon = !expired && timeLeft !== "" && parseInt(timeLeft) < 5;
+  const isExpiringSoon = !expired && timeLeft !== "" && parseInt(timeLeft) < 2;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
@@ -98,7 +140,8 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
         {messages.map((msg) => {
           const isOwn = msg.sender === senderRole;
           const time = new Date(msg.created_at).toLocaleTimeString("es-AR", {
-            hour: "2-digit", minute: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
           });
           return (
             <div key={msg.id} className={`flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
@@ -122,7 +165,7 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
       {expired ? (
         <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
           <p className="text-xs text-gray-400 text-center">
-            El chat estuvo disponible por 45 minutos desde la creación del pedido.
+            El chat estuvo disponible por 10 minutos desde la creación del pedido.
           </p>
         </div>
       ) : (
