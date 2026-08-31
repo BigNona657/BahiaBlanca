@@ -186,6 +186,8 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
     : parseFloat(product.price);
   const total = price * ((isEmpanada || isTarta) ? 1 : qty);
   const hasImage = !!(product.image_data || product.image_url);
+  // Si no hay image_data inline, usar la API route (carga bajo demanda)
+  const imageSrc = product.image_data || product.image_url || `/api/image/product/${product.id}`;
 
   // La barra inferior se muestra cuando ya se completó la selección obligatoria
   const selectionDone =
@@ -210,12 +212,13 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
         <div className="relative w-full shrink-0" style={{ height: "50dvh" }}>
           {hasImage ? (
             <Image
-              src={product.image_data || product.image_url!}
+              src={imageSrc}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, 448px"
               className="object-cover"
               priority
+              unoptimized={imageSrc.startsWith("/api/image")}
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center text-7xl">

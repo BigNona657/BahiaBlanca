@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { Product } from "@/types/menu";
 
 type Props = {
@@ -21,15 +20,14 @@ export default function ProductCard({ product, onOpen, priority = false }: Props
       }`}
     >
       <div className="relative w-full aspect-square bg-gray-100">
-        {(product.image_data || product.image_url) ? (
-          <Image
-            src={product.image_data || product.image_url!}
+        {(product.image_url || true) ? (
+          // Siempre mostrar imagen: base64 inline (si existe), URL externa, o API route
+          // image_data ya no viene en el listado — se carga solo en el modal
+          <img
+            src={product.image_url || `/api/image/product/${product.id}`}
             alt={product.name}
-            fill
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover"
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading={priority ? "eager" : "lazy"}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl">

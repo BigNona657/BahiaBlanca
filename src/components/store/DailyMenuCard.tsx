@@ -12,6 +12,8 @@ const DAILY_PRODUCT_ID = -1;
 export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
   const [qty, setQty] = useState(1);
   const isAgotado = menu.stock !== undefined && menu.stock <= 0;
+  const today = new Date().getDay();
+  const imageSrc = menu.image_data || `/api/image/setting/daily_menus_idx_${today}`;
   const [modalOpen, setModalOpen] = useState(false);
   const { addToCart, items } = useCart();
   const { data: session } = useSession();
@@ -84,18 +86,19 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
     <>
       <div className="mx-4 mb-6 rounded-3xl overflow-hidden shadow-md bg-white border border-brand-100">
         {/* Imagen — clickeable para abrir modal */}
-        {menu.image_data ? (
+        {(menu.image_data || true) ? (
           <div
             className="relative w-full h-48 sm:h-56 cursor-zoom-in"
             onClick={() => setModalOpen(true)}
           >
             <Image
-              src={menu.image_data}
+              src={imageSrc}
               alt={menu.title}
               fill
               sizes="(max-width: 1024px) 100vw, 960px"
               className="object-cover"
               priority
+              unoptimized={imageSrc.startsWith("/api/image")}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <span className="absolute top-3 left-3 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -168,7 +171,7 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
       </div>
 
       {/* ── Modal imagen expandida ── */}
-      {modalOpen && menu.image_data && (
+      {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => setModalOpen(false)}
@@ -181,12 +184,13 @@ export default function DailyMenuCard({ menu }: { menu: DailyMenu }) {
             {/* Imagen: 50dvh */}
             <div className="relative w-full shrink-0" style={{ height: "50dvh" }}>
               <Image
-                src={menu.image_data}
+                src={imageSrc}
                 alt={menu.title}
                 fill
                 sizes="(max-width: 640px) 100vw, 448px"
                 className="object-cover"
                 priority
+                unoptimized={imageSrc.startsWith("/api/image")}
               />
               <button
                 onClick={() => setModalOpen(false)}

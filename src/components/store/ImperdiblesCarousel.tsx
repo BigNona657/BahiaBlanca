@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import type { ImperdibleItem } from "@/lib/actions/settings";
 import type { Product } from "@/types/menu";
 
@@ -54,8 +53,13 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
               className={`snap-start shrink-0 w-44 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col transition-transform cursor-pointer ${agotado ? "opacity-80" : "active:scale-95"}`}
             >
               <div className="relative w-full aspect-square bg-gray-100">
-                {item.image_data ? (
-                  <Image src={item.image_data} alt={item.title} fill sizes="176px" className="object-cover" priority={i < 2} loading={i < 2 ? undefined : "lazy"} />
+                {(item.image_data || true) ? (
+                  <img
+                    src={item.image_data || `/api/image/setting/imperdibles_idx_${i}`}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading={i < 2 ? "eager" : "lazy"}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
                 )}

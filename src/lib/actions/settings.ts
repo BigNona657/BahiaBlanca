@@ -128,7 +128,8 @@ export async function getAllSettings(): Promise<{
     if (map.imperdibles) {
       const parsed = JSON.parse(map.imperdibles);
       if (Array.isArray(parsed) && (parsed.length === 0 || typeof parsed[0] !== "number")) {
-        imperdibles = parsed;
+        // Excluir image_data — se carga bajo demanda via /api/image/setting/imperdibles_idx_N
+        imperdibles = parsed.map((item: ImperdibleItem, _i: number) => ({ ...item, image_data: "" }));
       }
     }
   } catch {}
@@ -140,7 +141,8 @@ export async function getAllSettings(): Promise<{
       const parsed = JSON.parse(menusRaw);
       const today = getTodayArgentina();
       const menu = Array.isArray(parsed) && parsed[today] ? parsed[today] : parsed;
-      if (menu?.active && menu?.title) dailyMenu = { ...menu, day: today };
+      // Excluir image_data — se carga bajo demanda via /api/image/setting/daily_menus_idx_N
+      if (menu?.active && menu?.title) dailyMenu = { ...menu, image_data: "", day: today };
     }
   } catch {}
 

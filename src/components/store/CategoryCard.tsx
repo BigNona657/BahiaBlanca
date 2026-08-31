@@ -8,7 +8,8 @@ type Props = {
 };
 
 export default function CategoryCard({ category, onSelect }: Props) {
-  const src = category.image_data || category.image_url;
+  const src = category.image_data || category.image_url || `/api/image/category/${category.id}`;
+
 
   return (
     <div
@@ -21,6 +22,7 @@ export default function CategoryCard({ category, onSelect }: Props) {
           src={src}
           alt={category.name}
           className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
