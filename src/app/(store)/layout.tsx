@@ -16,7 +16,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   return (
     <ClientUnreadProvider>
       <div className="min-h-screen flex flex-col">
-      <Navbar businessName={settings.business_name} logoData={settings.logo_data} logoSize={settings.logo_size} />
+      <Navbar businessName={settings.business_name} hasLogo={!!settings.logo_data} logoSize={settings.logo_size} />
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
       <BottomNav />
 

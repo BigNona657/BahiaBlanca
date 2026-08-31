@@ -9,11 +9,11 @@ import { usePathname } from "next/navigation";
 
 type Props = {
   businessName: string;
-  logoData: string;
+  hasLogo: boolean;
   logoSize?: number;
 };
 
-export default function Navbar({ businessName, logoData, logoSize = 36 }: Props) {
+export default function Navbar({ businessName, hasLogo, logoSize = 36 }: Props) {
   const { data: session, status } = useSession();
   const { totalItems } = useCart();
   const [open, setOpen] = useState(false);
@@ -53,16 +53,15 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
             window.dispatchEvent(new CustomEvent("go-home"));
           }}
         >
-          {logoData ? (
-            <Image
-              src={logoData}
+          {hasLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/api/image/setting/logo_data"
               alt={`Logo ${businessName}`}
               width={logoSize}
               height={logoSize}
               className="object-contain rounded-full"
               style={{ width: logoSize, height: logoSize }}
-              unoptimized={logoData.startsWith("data:")}
-              priority
             />
           ) : null}
           <span className="text-xl font-bold text-brand-600">{businessName}</span>

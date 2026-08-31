@@ -21,15 +21,25 @@ export async function GET(
       const rows = await sql`SELECT image_data FROM categories WHERE id = ${parseInt(id)} LIMIT 1`;
       imageData = rows[0]?.image_data as string | null;
     } else if (type === "setting") {
-      // id puede ser "daily_menu" o "imperdibles_idx_0"
+      // id puede ser "logo_data", "daily_menu" o "imperdibles_idx_0"
       const [key, indexStr] = id.split("_idx_");
       const rows = await sql`SELECT value FROM app_settings WHERE key = ${key} LIMIT 1`;
       if (rows[0]?.value) {
-        const parsed = JSON.parse(rows[0].value as string);
-        if (indexStr !== undefined) {
-          imageData = Array.isArray(parsed) ? (parsed[parseInt(indexStr)]?.image_data ?? null) : null;
+        const raw = rows[0].value as string;
+        // logo_data y similares son base64 directo, no JSON
+        if (raw.startsWith("data:")) {
+          imageData = raw;
         } else {
-          imageData = parsed?.image_data ?? null;
+          try {
+            const parsed = JSON.parse(raw);
+            if (indexStr !== undefined) {
+              imageData = Array.isArray(parsed) ? (parsed[parseInt(indexStr)]?.image_data ?? null) : null;
+            } else {
+              imageData = parsed?.image_data ?? null;
+            }
+          } catch {
+            imageData = null;
+          }
         }
       }
     }
