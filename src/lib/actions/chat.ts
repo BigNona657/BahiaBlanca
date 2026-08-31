@@ -3,7 +3,6 @@
 import { sql } from "@/lib/db/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { broadcastChatMessage } from "@/lib/sse";
 
 export type ChatMessage = {
   id: number;
@@ -63,21 +62,10 @@ export async function sendChatMessage(
 
   const sender = isAdmin ? "admin" : "client";
 
-  const inserted = await sql`
+  await sql`
     INSERT INTO order_messages (order_id, sender, text)
     VALUES (${orderId}, ${sender}, ${trimmed})
-    RETURNING id, sender, text, created_at
   `;
-
-  const msg = inserted[0] as ChatMessage;
-
-  // Propagar el mensaje a todos los suscriptores SSE de esta orden
-  broadcastChatMessage(orderId, {
-    id: msg.id,
-    sender: msg.sender,
-    text: msg.text,
-    created_at: String(msg.created_at),
-  });
 
   return { success: true };
 }
