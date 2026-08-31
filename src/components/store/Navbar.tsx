@@ -42,11 +42,8 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
         <Link
           href="/"
           className="flex items-center gap-2"
-          onClick={(e) => {
-            if (window.history.state?.categoryId) {
-              e.preventDefault();
-              window.dispatchEvent(new CustomEvent("go-home"));
-            }
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("go-home"));
           }}
         >
           {logoData ? (
