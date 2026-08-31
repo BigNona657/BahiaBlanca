@@ -3,15 +3,9 @@
 import { sql } from "@/lib/db/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { CHAT_EXPIRY_MS } from "@/lib/chat-config";
 
-export type ChatMessage = {
-  id: number;
-  sender: "client" | "admin";
-  text: string;
-  created_at: string;
-};
-
-export const CHAT_EXPIRY_MS = 10 * 60 * 1000; // 10 minutos
+export type { ChatMessage } from "@/lib/chat-config";
 
 export async function isChatOpen(orderCreatedAt: string): Promise<boolean> {
   return Date.now() - new Date(orderCreatedAt).getTime() < CHAT_EXPIRY_MS;

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { getChatMessages, sendChatMessage, CHAT_EXPIRY_MS, type ChatMessage } from "@/lib/actions/chat";
+import { getChatMessages, sendChatMessage, type ChatMessage } from "@/lib/actions/chat";
+import { CHAT_EXPIRY_MS } from "@/lib/chat-config";
 
 type Props = {
   orderId: number;
