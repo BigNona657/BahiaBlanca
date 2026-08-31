@@ -3,7 +3,7 @@
 import { sql } from "@/lib/db/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { CHAT_EXPIRY_MS } from "@/lib/chat-config";
+import { CHAT_EXPIRY_MS, type ChatMessage } from "@/lib/chat-config";
 
 export type { ChatMessage } from "@/lib/chat-config";
 
