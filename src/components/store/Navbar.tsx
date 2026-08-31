@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
+import { usePathname } from "next/navigation";
 
 type Props = {
   businessName: string;
@@ -31,6 +32,8 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const pathname = usePathname();
+
   const cartBadge = mounted ? totalItems : 0;
   const initials = session?.user?.name
     ? session.user.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
@@ -42,7 +45,11 @@ export default function Navbar({ businessName, logoData, logoSize = 36 }: Props)
         <Link
           href="/"
           className="flex items-center gap-2"
-          onClick={() => {
+          onClick={(e) => {
+            if (pathname === "/") {
+              // Ya estamos en /, solo resetear la categoría sin navegar
+              e.preventDefault();
+            }
             window.dispatchEvent(new CustomEvent("go-home"));
           }}
         >

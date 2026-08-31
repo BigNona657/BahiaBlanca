@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useClientUnread } from "@/context/ClientUnreadContext";
 import { useEffect, useState } from "react";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { totalItems } = useCart();
   const { unreadMessages, setUnreadMessages } = useClientUnread();
   const [mounted, setMounted] = useState(false);
@@ -21,6 +22,21 @@ export default function BottomNav() {
     { href: "/orders", label: "Pedidos", icon: "📦",  badge: mounted ? unreadMessages : 0 },
   ];
 
+  function handleMenuClick(e: React.MouseEvent, href: string) {
+    if (href === "/orders") setUnreadMessages(0);
+
+    if (href === "/" && pathname === "/") {
+      // Ya estamos en /, solo resetear la categoría seleccionada
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent("go-home"));
+      return;
+    }
+
+    if (href !== "/" && pathname !== href) {
+      router.push(href);
+    }
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 md:hidden">
       <div className="flex">
@@ -30,7 +46,7 @@ export default function BottomNav() {
             <Link
               key={link.href}
               href={link.href}
-              onClick={() => { if (link.href === "/orders") setUnreadMessages(0); }}
+              onClick={(e) => handleMenuClick(e, link.href)}
               className={`flex-1 flex flex-col items-center py-2 text-xs gap-0.5 transition ${
                 active ? "text-brand-600 font-semibold" : "text-gray-400"
               }`}
