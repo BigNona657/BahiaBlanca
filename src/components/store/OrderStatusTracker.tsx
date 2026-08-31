@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import type { OrderStatus } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { useOrderStream } from "@/context/OrderStreamContext";
 
 const FINAL_STATUSES: OrderStatus[] = ["DELIVERED", "CANCELLED"];
 
@@ -14,8 +15,24 @@ const STATUS_MESSAGES: Partial<Record<OrderStatus, string>> = {
   CANCELLED:  "❌ Tu pedido fue cancelado.",
 };
 
-export default function OrderStatusTracker({
-  orderId,
+function playStatusBeep() {
+  try {
+    const ctx = new AudioContext();
+    [{ f: 520, t: 0 }, { f: 660, t: 0.2 }].forEach(({ f, t }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.2);
+    });
+  } catch {}
+}
+
+const OrderStatusTracker = memo(function OrderStatusTracker({
   initialStatus,
 }: {
   orderId: number;
@@ -24,30 +41,12 @@ export default function OrderStatusTracker({
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
   const [toast, setToast] = useState<string | null>(null);
   const currentStatus = useRef<OrderStatus>(initialStatus);
-
-  function playStatusBeep() {
-    try {
-      const ctx = new AudioContext();
-      [{ f: 520, t: 0 }, { f: 660, t: 0.2 }].forEach(({ f, t }) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = f;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + t);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.2);
-        osc.start(ctx.currentTime + t);
-        osc.stop(ctx.currentTime + t + 0.2);
-      });
-    } catch {}
-  }
+  const es = useOrderStream();
 
   useEffect(() => {
-    if (FINAL_STATUSES.includes(currentStatus.current)) return;
+    if (!es || FINAL_STATUSES.includes(currentStatus.current)) return;
 
-    const es = new EventSource(`/api/orders/${orderId}/stream`);
-
-    es.addEventListener("status", (e: MessageEvent) => {
+    function handleStatus(e: MessageEvent) {
       const next = e.data as OrderStatus;
       if (next === currentStatus.current) return;
       currentStatus.current = next;
@@ -59,21 +58,15 @@ export default function OrderStatusTracker({
         setToast(msg);
         setTimeout(() => setToast(null), 5000);
       }
+    }
 
-      if (FINAL_STATUSES.includes(next)) es.close();
-    });
-
-    es.onerror = () => {
-      // El browser reintenta automáticamente
-    };
-
-    return () => es.close();
-  }, [orderId]);
+    es.addEventListener("status", handleStatus);
+    return () => es.removeEventListener("status", handleStatus);
+  }, [es]);
 
   return (
     <>
       <StatusBadge status={status} />
-
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-xl whitespace-nowrap">
@@ -83,4 +76,6 @@ export default function OrderStatusTracker({
       )}
     </>
   );
-}
+});
+
+export default OrderStatusTracker;

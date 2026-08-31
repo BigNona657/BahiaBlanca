@@ -1,40 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, memo } from "react";
 import { getChatMessages, sendChatMessage, type ChatMessage } from "@/lib/actions/chat";
 import { CHAT_EXPIRY_MS } from "@/lib/chat-config";
+import { useOrderStream } from "@/context/OrderStreamContext";
 
-type Props = {
-  orderId: number;
+// ─── Timer aislado ────────────────────────────────────────────────────────────
+// Separado para que el setInterval de 1s no re-renderice la lista de mensajes.
+
+const ChatTimer = memo(function ChatTimer({
+  orderCreatedAt,
+  onExpire,
+}: {
   orderCreatedAt: string;
-  senderRole: "client" | "admin";
-};
-
-export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [expired, setExpired] = useState(false);
+  onExpire: () => void;
+}) {
   const [timeLeft, setTimeLeft] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const esRef = useRef<EventSource | null>(null);
+  const expiredRef = useRef(false);
 
-  // Carga inicial de mensajes históricos
-  useEffect(() => {
-    getChatMessages(orderId).then(setMessages);
-  }, [orderId]);
-
-  // Temporizador de expiración
   useEffect(() => {
     const createdAt = new Date(orderCreatedAt).getTime();
 
     function tick() {
       const remaining = CHAT_EXPIRY_MS - (Date.now() - createdAt);
       if (remaining <= 0) {
-        setExpired(true);
-        setTimeLeft("Expirado");
-        esRef.current?.close();
+        if (!expiredRef.current) {
+          expiredRef.current = true;
+          setTimeLeft("Expirado");
+          onExpire();
+        }
         return;
       }
       const mins = Math.floor(remaining / 60000);
@@ -45,40 +39,70 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
-  }, [orderCreatedAt]);
+  }, [orderCreatedAt, onExpire]);
 
-  // Conexión SSE
+  const isExpiringSoon = timeLeft !== "" && timeLeft !== "Expirado" && parseInt(timeLeft) < 2;
+
+  return (
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+      timeLeft === "Expirado"
+        ? "bg-gray-100 text-gray-400"
+        : isExpiringSoon
+        ? "bg-red-50 text-red-500"
+        : "bg-green-50 text-green-600"
+    }`}>
+      {timeLeft === "Expirado" ? "Chat cerrado" : `⏱ ${timeLeft}`}
+    </span>
+  );
+});
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+
+type Props = {
+  orderId: number;
+  orderCreatedAt: string;
+  senderRole: "client" | "admin";
+};
+
+export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [expired, setExpired] = useState(
+    () => Date.now() - new Date(orderCreatedAt).getTime() >= CHAT_EXPIRY_MS
+  );
+  const [isPending, startTransition] = useTransition();
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const es = useOrderStream();
+
+  // Carga inicial de mensajes históricos
   useEffect(() => {
-    const createdAt = new Date(orderCreatedAt).getTime();
-    const alreadyExpired = Date.now() - createdAt >= CHAT_EXPIRY_MS;
-    if (alreadyExpired) {
-      setExpired(true);
-      return;
-    }
+    getChatMessages(orderId).then(setMessages);
+  }, [orderId]);
 
-    const es = new EventSource(`/api/orders/${orderId}/stream`);
-    esRef.current = es;
+  // Escuchar eventos de chat del stream compartido
+  useEffect(() => {
+    if (!es || expired) return;
 
-    es.addEventListener("chat", (e: MessageEvent) => {
+    function handleChat(e: MessageEvent) {
       const msg: ChatMessage = JSON.parse(e.data);
       setMessages((prev) => {
-        // Evitar duplicados si el mensaje ya fue agregado optimistamente
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-    });
+    }
 
-    es.addEventListener("chat-expired", () => {
+    function handleExpired() {
       setExpired(true);
-      es.close();
-    });
+    }
 
-    es.onerror = () => {
-      // El browser reintenta automáticamente; no hacer nada
+    es.addEventListener("chat", handleChat);
+    es.addEventListener("chat-expired", handleExpired);
+    return () => {
+      es.removeEventListener("chat", handleChat);
+      es.removeEventListener("chat-expired", handleExpired);
     };
-
-    return () => es.close();
-  }, [orderId, orderCreatedAt]);
+  }, [es, expired]);
 
   // Scroll al último mensaje
   useEffect(() => {
@@ -91,9 +115,8 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
     const text = input;
     setInput("");
 
-    // Inserción optimista
     const optimistic: ChatMessage = {
-      id: Date.now(), // id temporal
+      id: Date.now(),
       sender: senderRole,
       text,
       created_at: new Date().toISOString(),
@@ -103,32 +126,26 @@ export default function OrderChat({ orderId, orderCreatedAt, senderRole }: Props
     startTransition(async () => {
       const result = await sendChatMessage(orderId, text);
       if (!result.success) {
-        // Revertir si falló
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
         setInput(text);
       }
-      // El mensaje real llega por SSE y reemplaza el optimista via dedup
     });
 
     inputRef.current?.focus();
   }
-
-  const isExpiringSoon = !expired && timeLeft !== "" && parseInt(timeLeft) < 2;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <h2 className="text-sm font-bold text-gray-700">💬 Chat del pedido</h2>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-          expired
-            ? "bg-gray-100 text-gray-400"
-            : isExpiringSoon
-            ? "bg-red-50 text-red-500"
-            : "bg-green-50 text-green-600"
-        }`}>
-          {expired ? "Chat cerrado" : `⏱ ${timeLeft}`}
-        </span>
+        {expired ? (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+            Chat cerrado
+          </span>
+        ) : (
+          <ChatTimer orderCreatedAt={orderCreatedAt} onExpire={() => setExpired(true)} />
+        )}
       </div>
 
       {/* Mensajes */}

@@ -4,6 +4,7 @@ import { getClientOrderDetail } from "@/lib/actions/orders";
 import StatusBadge from "@/components/ui/StatusBadge";
 import OrderStatusTracker from "@/components/store/OrderStatusTracker";
 import OrderChat from "@/components/store/OrderChat";
+import { OrderStreamProvider } from "@/context/OrderStreamContext";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -54,6 +55,7 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
   });
 
   return (
+    <OrderStreamProvider orderId={order.id}>
     <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
       {/* Header */}
       <div>
@@ -153,6 +155,7 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
         Hacer otro pedido
       </Link>
     </div>
+    </OrderStreamProvider>
   );
 }
 

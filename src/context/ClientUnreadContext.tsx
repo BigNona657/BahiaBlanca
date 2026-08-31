@@ -21,7 +21,8 @@ export function ClientUnreadProvider({ children }: { children: ReactNode }) {
         const res = await fetch(`/api/orders/unread?since=${lastId.current}`, { cache: "no-store" });
         if (!res.ok) return;
         const { lastId: newLastId, newCount } = await res.json();
-        if (newLastId > lastId.current) {
+        // Guard: solo actualizar estado si realmente hay mensajes nuevos
+        if (newLastId > lastId.current && newCount > 0) {
           setUnreadMessages((prev) => prev + newCount);
           lastId.current = newLastId;
         }
