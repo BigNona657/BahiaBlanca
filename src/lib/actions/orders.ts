@@ -143,7 +143,7 @@ export async function createOrder(
   const regularItems = items.filter((i) => i.product.id > 0);
 
   const subtotal = items.reduce(
-    (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
+    (sum, i) => sum + (i.unitPrice ?? parseFloat(i.product.price)) * i.quantity,
     0
   );
   const total = subtotal;
@@ -168,7 +168,7 @@ export async function createOrder(
     for (const item of regularItems) {
       await sql`
         INSERT INTO order_items (order_id, product_id, quantity, unit_price, note)
-        VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${parseFloat(item.product.price)}, ${item.note ?? null})
+        VALUES (${orderId}, ${item.product.id}, ${item.quantity}, ${item.unitPrice ?? parseFloat(item.product.price)}, ${item.note ?? null})
       `;
     }
 
