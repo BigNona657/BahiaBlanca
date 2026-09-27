@@ -66,7 +66,7 @@ export default function AdminOrderCard({
             ${parseFloat(order.total).toLocaleString("es-AR", { minimumFractionDigits: 0 })}
           </span>
           {showSelect
-            ? <OrderStatusSelect orderId={order.id} current={order.status} />
+            ? <OrderStatusSelect orderId={order.id} current={order.status} isTakeaway={order.delivery_address.startsWith("Take away")} />
             : <StatusBadge status={order.status} />
           }
           <button

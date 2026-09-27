@@ -9,7 +9,8 @@ const FINAL_STATUSES: OrderStatus[] = ["DELIVERED", "CANCELLED"];
 
 const STATUS_MESSAGES: Partial<Record<OrderStatus, string>> = {
   CONFIRMED:  "✅ Tu pedido fue confirmado.",
-  PREPARING:  "👨‍🍳 Tu pedido está siendo preparado.",
+  PREPARING:  "👨🍳 Tu pedido está siendo preparado.",
+  READY:      "🟢 ¡Tu pedido está listo para retirar!",
   DELIVERING: "🛵 ¡Tu pedido está en camino!",
   DELIVERED:  "🏠 ¡Tu pedido fue entregado!",
   CANCELLED:  "❌ Tu pedido fue cancelado.",
