@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
                       minimumFractionDigits: 0,
                     })}
                   </span>
-                  <OrderStatusSelect orderId={order.id} current={order.status} />
+                  <OrderStatusSelect orderId={order.id} current={order.status} isTakeaway={order.delivery_address.startsWith("Take away")} />
                 </div>
               </div>
             ))}
