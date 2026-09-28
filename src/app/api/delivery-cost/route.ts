@@ -2,10 +2,17 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { type DeliveryConfig, DEFAULT_DELIVERY_CONFIG } from "@/lib/delivery";
 
-// Coordenadas fijas del origen (Vicente Fatone 657, Bahía Blanca)
 const ORIGIN_COORDS = "-38.7183,-62.2663";
 const ORIGIN_ADDRESS = "Vicente Fatone 657, Bahía Blanca, Buenos Aires, Argentina";
 const CITY_SUFFIX = "Bahía Blanca, Buenos Aires, Argentina";
+
+type GMElement = { status: string; distance: { value: number } };
+type GMRow = { elements: GMElement[] };
+
+type DeliveryResult =
+  | { deliverable: true; fee: number; distance_km: number; free: false; mode: string }
+  | { deliverable: true; fee: 0; distance_km: null; free: true; reason: string }
+  | { deliverable: false; error: string; distance_km?: number };
 
 function buildDestinationFromAddress(address: string): string {
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
@@ -18,12 +25,16 @@ function buildDestinationFromAddress(address: string): string {
 }
 
 function sanitizeForLog(value: string): string {
-  return value.replace(/[\r\n\t]/g, " ").slice(0, 200);
+  return value.replace(/[\r\n\t\0]/g, " ").replace(/[^\x20-\x7E\u00C0-\u024F]/g, "?").slice(0, 150);
 }
 
-async function fetchDistanceMatrix(destination: string, apiKey: string) {
+async function callDistanceMatrix(
+  origin: string,
+  destination: string,
+  apiKey: string
+): Promise<GMElement | null> {
   const gmUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-  gmUrl.searchParams.set("origins", ORIGIN_ADDRESS);
+  gmUrl.searchParams.set("origins", origin);
   gmUrl.searchParams.set("destinations", destination);
   gmUrl.searchParams.set("units", "metric");
   gmUrl.searchParams.set("key", apiKey);
@@ -33,17 +44,18 @@ async function fetchDistanceMatrix(destination: string, apiKey: string) {
   try {
     const res = await fetch(gmUrl.toString(), { signal: controller.signal });
     clearTimeout(timeout);
-    return await res.json();
-  } catch (err) {
+    const data = await res.json();
+    return (data?.rows as GMRow[])?.[0]?.elements?.[0] ?? null;
+  } catch {
     clearTimeout(timeout);
-    throw err;
+    return null;
   }
 }
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  // ── Validación de subtotal ────────────────────────────────────────────────
+  // ── Validar subtotal ──────────────────────────────────────────────────────
   const rawSubtotal = searchParams.get("subtotal");
   const subtotal = rawSubtotal !== null ? Number(rawSubtotal) : 0;
   if (isNaN(subtotal) || subtotal < 0) {
@@ -53,7 +65,7 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── Validación de coordenadas o dirección ─────────────────────────────────
+  // ── Validar coordenadas o dirección ───────────────────────────────────────
   const rawLat = searchParams.get("lat");
   const rawLng = searchParams.get("lng");
   const rawAddress = searchParams.get("address");
@@ -61,10 +73,11 @@ export async function GET(req: Request) {
   const lat = rawLat !== null ? Number(rawLat) : NaN;
   const lng = rawLng !== null ? Number(rawLng) : NaN;
   const hasCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+  const hasAddress = !!rawAddress && rawAddress.trim().length >= 5;
 
-  if (!hasCoords && (!rawAddress || rawAddress.trim().length < 5)) {
+  if (!hasCoords && !hasAddress) {
     return NextResponse.json(
-      { error: "Proporcioná coordenadas (lat/lng) o una dirección válida." },
+      { error: "Proporcioná coordenadas (lat/lng) o una dirección de al menos 5 caracteres." },
       { status: 400 }
     );
   }
@@ -76,75 +89,78 @@ export async function GET(req: Request) {
     if (rows[0]?.value) config = JSON.parse(rows[0].value as string);
   } catch {}
 
+  // Envío gratis por monto — no necesita llamar a Google
   if (config.free_from > 0 && subtotal >= config.free_from) {
-    return NextResponse.json({ fee: 0, distance_km: null, free: true, reason: "monto" });
+    const result: DeliveryResult = { deliverable: true, fee: 0, distance_km: null, free: true, reason: "monto" };
+    return NextResponse.json(result);
   }
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ fee: 0, distance_km: null, free: true, reason: "config" });
+    // Sin key configurada: envío gratis para no bloquear
+    const result: DeliveryResult = { deliverable: true, fee: 0, distance_km: null, free: true, reason: "config" };
+    return NextResponse.json(result);
   }
 
-  // ── Calcular distancia ────────────────────────────────────────────────────
-  // Modo 1: coordenadas exactas (más preciso, sin ambigüedad de geocodificación)
-  // Modo 2: fallback por texto de dirección
-  const destination = hasCoords
-    ? `${lat},${lng}`
-    : buildDestinationFromAddress(rawAddress!.trim());
+  // ── Estrategia fallback: coords → texto ───────────────────────────────────
+  let element: GMElement | null = null;
+  let mode = "address";
 
-  // Si usamos coords, el origen también va como coords para mayor precisión
-  const gmUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-  gmUrl.searchParams.set("origins", hasCoords ? ORIGIN_COORDS : ORIGIN_ADDRESS);
-  gmUrl.searchParams.set("destinations", destination);
-  gmUrl.searchParams.set("units", "metric");
-  gmUrl.searchParams.set("key", apiKey);
-
-  let gmData: Record<string, unknown>;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    const gmRes = await fetch(gmUrl.toString(), { signal: controller.signal });
-    clearTimeout(timeout);
-    gmData = await gmRes.json();
-  } catch (err) {
-    const isTimeout = err instanceof Error && err.name === "AbortError";
-    return NextResponse.json(
-      { error: isTimeout ? "El servicio de mapas tardó demasiado. Intentá de nuevo." : "Error al conectar con el servicio de mapas." },
-      { status: 503 }
-    );
+  if (hasCoords) {
+    element = await callDistanceMatrix(ORIGIN_COORDS, `${lat},${lng}`, apiKey);
+    if (element?.status === "OK") {
+      mode = "coords";
+    } else {
+      // Fallback a texto si las coords no dieron resultado
+      console.warn("[delivery-cost] coords fallback triggered, status:", element?.status);
+      element = null;
+    }
   }
 
-  type GMElement = { status: string; distance: { value: number } };
-  type GMRow = { elements: GMElement[] };
-  const element = (gmData?.rows as GMRow[])?.[0]?.elements?.[0];
+  if (!element && hasAddress) {
+    const destination = buildDestinationFromAddress(rawAddress!.trim());
+    element = await callDistanceMatrix(ORIGIN_ADDRESS, destination, apiKey);
+    if (element?.status === "OK") {
+      mode = "address";
+    } else {
+      console.warn(
+        "[delivery-cost] address attempt failed, status:", element?.status,
+        "| destination:", sanitizeForLog(destination)
+      );
+      element = null;
+    }
+  }
 
+  // ── Ambos intentos fallaron ───────────────────────────────────────────────
   if (!element || element.status !== "OK") {
-    console.warn(
-      "[delivery-cost] Google status:", element?.status,
-      "| mode:", hasCoords ? "coords" : "address",
-      "| destination:", sanitizeForLog(destination)
-    );
-    return NextResponse.json(
-      { error: "No encontramos esa dirección. Verificá que sea una calle válida de Bahía Blanca." },
-      { status: 422 }
-    );
+    const result: DeliveryResult = {
+      deliverable: false,
+      error: "No pudimos calcular la ruta a esa ubicación. Verificá que sea una calle válida de Bahía Blanca.",
+    };
+    return NextResponse.json(result);
   }
 
+  // ── Verificar cobertura ───────────────────────────────────────────────────
   const distance_km = element.distance.value / 1000;
 
   if (config.max_km > 0 && distance_km > config.max_km) {
-    return NextResponse.json(
-      { error: `La dirección está fuera de la zona de cobertura (máximo ${config.max_km} km).`, distance_km },
-      { status: 422 }
-    );
+    const result: DeliveryResult = {
+      deliverable: false,
+      error: `La dirección está fuera de la zona de cobertura (máximo ${config.max_km} km).`,
+      distance_km: Math.round(distance_km * 10) / 10,
+    };
+    return NextResponse.json(result);
   }
 
+  // ── Calcular costo ────────────────────────────────────────────────────────
   const fee = Math.round(config.base_fee + distance_km * config.price_per_km);
 
-  return NextResponse.json({
+  const result: DeliveryResult = {
+    deliverable: true,
     fee,
     distance_km: Math.round(distance_km * 10) / 10,
     free: false,
-    mode: hasCoords ? "coords" : "address",
-  });
+    mode,
+  };
+  return NextResponse.json(result);
 }

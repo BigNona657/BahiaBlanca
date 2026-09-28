@@ -83,6 +83,8 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
         const data = await res.json();
         if (!res.ok) {
           setDelivery({ status: "error", message: data.error ?? "No se pudo calcular el envío" });
+        } else if (!data.deliverable) {
+          setDelivery({ status: "error", message: data.error });
         } else if (data.free) {
           setDelivery({ status: "free", reason: "¡Envío gratis por el monto de tu pedido! 🎉" });
         } else {
