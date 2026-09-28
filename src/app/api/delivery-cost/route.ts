@@ -5,13 +5,27 @@ import { type DeliveryConfig, DEFAULT_DELIVERY_CONFIG } from "@/lib/delivery";
 const ORIGIN = "Vicente Fatone 657, Bahía Blanca, Buenos Aires, Argentina";
 const CITY_SUFFIX = "Bahía Blanca, Buenos Aires, Argentina";
 
-// Evita duplicar la ciudad si la dirección ya la incluye
+// Normaliza la dirección eliminando componentes intermedios innecesarios
+// Ej: "Río Atuel 286, BVF, Bahía Blanca, Provincia de Buenos Aires, Argentina"
+//  -> "Río Atuel 286, Bahía Blanca, Buenos Aires, Argentina"
 function buildDestination(address: string): string {
-  const normalized = address.toLowerCase();
-  if (normalized.includes("bahía blanca") || normalized.includes("bahia blanca")) {
-    return address.trim();
+  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+
+  // Tomar solo la primera parte (calle + número)
+  const street = parts[0];
+
+  // Buscar el índice donde aparece "Bahía Blanca" o "Bahia Blanca"
+  const cityIndex = parts.findIndex((p) =>
+    p.toLowerCase().includes("bah") && p.toLowerCase().includes("blanca")
+  );
+
+  if (cityIndex !== -1) {
+    // Reconstruir: calle + ciudad en adelante (saltando partes intermedias como BVF)
+    return [street, ...parts.slice(cityIndex)].join(", ");
   }
-  return `${address.trim()}, ${CITY_SUFFIX}`;
+
+  // Si no tiene ciudad, agregarla
+  return `${street}, ${CITY_SUFFIX}`;
 }
 
 // Sanitiza el input para logs (elimina saltos de línea y caracteres de control)
