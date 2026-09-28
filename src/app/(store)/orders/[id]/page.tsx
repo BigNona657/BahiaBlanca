@@ -120,10 +120,16 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
               ${parseFloat(order.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>Envío</span>
-            <span className="text-green-600 font-medium">Gratis</span>
-          </div>
+          {!order.delivery_address.startsWith("Take away") && (
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Envío</span>
+              {parseFloat(order.delivery_fee) === 0 ? (
+                <span className="text-green-600 font-medium">¡Gratis! 🎉</span>
+              ) : (
+                <span>${parseFloat(order.delivery_fee).toLocaleString("es-AR", { minimumFractionDigits: 0 })}</span>
+              )}
+            </div>
+          )}
           <div className="flex justify-between text-base font-bold text-gray-800 pt-1 border-t border-gray-200">
             <span>Total</span>
             <span className="text-brand-600">

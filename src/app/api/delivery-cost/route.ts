@@ -23,7 +23,10 @@ export async function GET(req: Request) {
   }
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "API key no configurada" }, { status: 500 });
+  if (!apiKey) {
+    // Sin API key configurada: devolver costo 0 para no bloquear el pedido
+    return NextResponse.json({ fee: 0, distance_km: null, free: true, reason: "config" });
+  }
 
   const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
   url.searchParams.set("origins", ORIGIN);

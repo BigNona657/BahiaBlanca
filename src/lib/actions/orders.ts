@@ -12,8 +12,7 @@ export type CheckoutFormData = {
   customerName: string;
   phone: string;
   deliveryType: "DELIVERY" | "TAKEAWAY";
-  street: string;
-  streetNumber: string;
+  address: string;
   apartment: string;
   notes: string;
   paymentMethod: "CASH" | "TRANSFER";
@@ -131,7 +130,7 @@ export async function createOrder(
   const deliveryAddress = formData.deliveryType === "TAKEAWAY"
     ? "Take away · Fatone 657"
     : [
-        `${formData.street} ${formData.streetNumber}`.trim(),
+        formData.address.trim(),
         formData.apartment ? `Piso/Depto: ${formData.apartment}` : null,
         formData.notes ? `Aclaraciones: ${formData.notes}` : null,
       ]

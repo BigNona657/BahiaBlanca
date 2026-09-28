@@ -16,8 +16,7 @@ const INITIAL_FORM: CheckoutFormData = {
   customerName: "",
   phone: "",
   deliveryType: "DELIVERY",
-  street: "",
-  streetNumber: "",
+  address: "",
   apartment: "",
   notes: "",
   paymentMethod: "TRANSFER",
@@ -55,8 +54,8 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
   const orderTotal = deliveryFee !== null ? totalPrice + deliveryFee : totalPrice;
 
-  const calculateDelivery = useCallback((street: string, streetNumber: string, subtotal: number) => {
-    if (!street.trim() || !streetNumber.trim()) {
+  const calculateDelivery = useCallback((address: string, subtotal: number) => {
+    if (!address.trim()) {
       setDelivery({ status: "idle" });
       return;
     }
@@ -64,7 +63,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     debounceRef.current = setTimeout(async () => {
       setDelivery({ status: "loading" });
       try {
-        const address = `${street.trim()} ${streetNumber.trim()}`;
         const res = await fetch(`/api/delivery-cost?address=${encodeURIComponent(address)}&subtotal=${subtotal}`);
         const data = await res.json();
         if (!res.ok) {
@@ -80,11 +78,11 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     }, 800);
   }, []);
 
-  // Recalcular cuando cambia calle, número o subtotal
+  // Recalcular cuando cambia dirección o subtotal
   useEffect(() => {
     if (!isDelivery) { setDelivery({ status: "idle" }); return; }
-    calculateDelivery(form.street, form.streetNumber, totalPrice);
-  }, [form.street, form.streetNumber, totalPrice, isDelivery, calculateDelivery]);
+    calculateDelivery(form.address, totalPrice);
+  }, [form.address, totalPrice, isDelivery, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -274,30 +272,16 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
             {isDelivery && (
               <>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <Field label="Calle *">
-                      <input
-                        name="street"
-                        required
-                        placeholder="Av. Corrientes"
-                        value={form.street}
-                        onChange={handleField}
-                        className={inputCls}
-                      />
-                    </Field>
-                  </div>
-                  <Field label="Número *">
-                    <input
-                      name="streetNumber"
-                      required
-                      placeholder="1234"
-                      value={form.streetNumber}
-                      onChange={handleField}
-                      className={inputCls}
-                    />
-                  </Field>
-                </div>
+                <Field label="Dirección *">
+                  <input
+                    name="address"
+                    required
+                    placeholder="Av. Alem 1234"
+                    value={form.address}
+                    onChange={handleField}
+                    className={inputCls}
+                  />
+                </Field>
 
                 {/* Feedback de envío inline */}
                 {delivery.status !== "idle" && (
