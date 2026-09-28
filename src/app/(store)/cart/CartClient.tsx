@@ -46,6 +46,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [predictions, setPredictions] = useState<{ description: string; place_id: string }[]>([]);
   const [showPredictions, setShowPredictions] = useState(false);
   const placesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -61,7 +62,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     || delivery.status === "calculated"
     || delivery.status === "free";
 
-  const calculateDelivery = useCallback((address: string, subtotal: number) => {
+  const calculateDelivery = useCallback((address: string, subtotal: number, coords?: { lat: number; lng: number }) => {
     if (!address.trim()) {
       setDelivery({ status: "idle" });
       return;
@@ -70,7 +71,15 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     debounceRef.current = setTimeout(async () => {
       setDelivery({ status: "loading" });
       try {
-        const res = await fetch(`/api/delivery-cost?address=${encodeURIComponent(address)}&subtotal=${subtotal}`);
+        // Usar coordenadas si están disponibles (más preciso)
+        const params = new URLSearchParams({ subtotal: String(subtotal) });
+        if (coords) {
+          params.set("lat", String(coords.lat));
+          params.set("lng", String(coords.lng));
+        } else {
+          params.set("address", address);
+        }
+        const res = await fetch(`/api/delivery-cost?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) {
           setDelivery({ status: "error", message: data.error ?? "No se pudo calcular el envío" });
@@ -91,7 +100,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   useEffect(() => {
     if (!isDelivery) { setDelivery({ status: "idle" }); return; }
     if (!addressConfirmed) return;
-    calculateDelivery(form.address, totalPrice);
+    calculateDelivery(form.address, totalPrice, coordsRef.current ?? undefined);
   }, [form.address, totalPrice, isDelivery, addressConfirmed, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -100,6 +109,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     if (name === "address") {
       setAddressConfirmed(false);
       setDelivery({ status: "idle" });
+      coordsRef.current = null;
       fetchPredictions(value);
     }
   }
@@ -119,10 +129,25 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     }, 400);
   }
 
-  function selectPrediction(description: string) {
+  async function selectPrediction(description: string, placeId: string) {
     setForm((prev) => ({ ...prev, address: description }));
     setPredictions([]);
     setShowPredictions(false);
+    coordsRef.current = null;
+
+    // Obtener coordenadas exactas via Place Details
+    try {
+      const res = await fetch(`/api/places/details?place_id=${encodeURIComponent(placeId)}`);
+      const data = await res.json();
+      if (res.ok && data.lat && data.lng) {
+        coordsRef.current = { lat: data.lat, lng: data.lng };
+        // Si el servidor devuelve una dirección formateada, usarla
+        if (data.formatted_address) {
+          setForm((prev) => ({ ...prev, address: data.formatted_address }));
+        }
+      }
+    } catch {}
+
     setAddressConfirmed(true);
   }
 
@@ -130,6 +155,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     setDelivery({ status: "idle" });
     setAddressConfirmed(false);
     setPredictions([]);
+    coordsRef.current = null;
     setForm((prev) => ({
       ...prev,
       deliveryType: type,
@@ -334,7 +360,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                         {predictions.map((p) => (
                           <li
                             key={p.place_id}
-                            onMouseDown={() => selectPrediction(p.description)}
+                            onMouseDown={() => selectPrediction(p.description, p.place_id)}
                             className="px-3 py-2.5 text-sm text-gray-700 hover:bg-brand-50 cursor-pointer border-b border-gray-100 last:border-0"
                           >
                             📍 {p.description.split(",")[0]}
