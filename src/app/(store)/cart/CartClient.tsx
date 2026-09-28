@@ -81,16 +81,23 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     }, 800);
   }, []);
 
-  // Recalcular cuando cambia dirección o subtotal
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
+
+  // Recalcular solo cuando la dirección fue confirmada via autocomplete
   useEffect(() => {
     if (!isDelivery) { setDelivery({ status: "idle" }); return; }
+    if (!addressConfirmed) return;
     calculateDelivery(form.address, totalPrice);
-  }, [form.address, totalPrice, isDelivery, calculateDelivery]);
+  }, [form.address, totalPrice, isDelivery, addressConfirmed, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (name === "address") fetchPredictions(value);
+    if (name === "address") {
+      setAddressConfirmed(false);
+      setDelivery({ status: "idle" });
+      fetchPredictions(value);
+    }
   }
 
   function fetchPredictions(value: string) {
@@ -109,15 +116,17 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   }
 
   function selectPrediction(description: string) {
-    // Extraer solo calle y número (antes de la primera coma)
     const short = description.split(",")[0].trim();
     setForm((prev) => ({ ...prev, address: short }));
     setPredictions([]);
     setShowPredictions(false);
+    setAddressConfirmed(true);
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
     setDelivery({ status: "idle" });
+    setAddressConfirmed(false);
+    setPredictions([]);
     setForm((prev) => ({
       ...prev,
       deliveryType: type,
