@@ -39,7 +39,9 @@ export async function GET(req: Request) {
 
   const element = gmData?.rows?.[0]?.elements?.[0];
   if (!element || element.status !== "OK") {
-    return NextResponse.json({ error: "No se pudo calcular la distancia" }, { status: 422 });
+    // Si Google no puede calcular la distancia, permitir el pedido sin costo de envío calculado
+    console.warn("[delivery-cost] Google status:", element?.status, "| destination:", `${address}, Bahía Blanca`);
+    return NextResponse.json({ fee: 0, distance_km: null, free: true, reason: "no_route" });
   }
 
   const distance_km = element.distance.value / 1000;

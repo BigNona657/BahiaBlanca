@@ -26,6 +26,7 @@ type DeliveryState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "free"; reason: string }
+  | { status: "unresolved" }
   | { status: "calculated"; fee: number; distance_km: number }
   | { status: "error"; message: string };
 
@@ -70,6 +71,8 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
         const data = await res.json();
         if (!res.ok) {
           setDelivery({ status: "error", message: data.error ?? "No se pudo calcular el envío" });
+        } else if (data.free && data.reason === "no_route") {
+          setDelivery({ status: "unresolved" });
         } else if (data.free) {
           setDelivery({ status: "free", reason: "¡Envío gratis por el monto de tu pedido! 🎉" });
         } else {
@@ -222,6 +225,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                     {delivery.status === "idle" && <span className="text-gray-400">Ingresá tu dirección</span>}
                     {delivery.status === "loading" && <span className="text-gray-400 animate-pulse">Calculando...</span>}
                     {delivery.status === "free" && <span className="text-green-600 font-semibold">¡Gratis! 🎉</span>}
+                    {delivery.status === "unresolved" && <span className="text-gray-500 text-xs">A coordinar</span>}
                     {delivery.status === "calculated" && (
                       <span className="text-orange-500 font-medium">
                         ${delivery.fee.toLocaleString("es-AR")}
@@ -349,6 +353,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                   }`}>
                     {delivery.status === "loading" && <><span className="animate-spin">⏳</span> Calculando costo de envío...</>}
                     {delivery.status === "free" && <>{delivery.reason}</>}
+                    {delivery.status === "unresolved" && <>📍 Dirección registrada. El costo de envío se coordinará al confirmar.</>}
                     {delivery.status === "calculated" && <>🛵 Envío: <strong>${delivery.fee.toLocaleString("es-AR")}</strong> ({delivery.distance_km} km)</>}
                     {delivery.status === "error" && <>⚠️ {delivery.message}</>}
                   </div>
