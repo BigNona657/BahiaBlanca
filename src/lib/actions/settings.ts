@@ -500,8 +500,8 @@ export async function saveImperdibles(
 
 // ─── Delivery config ────────────────────────────────────────────────────────
 
-export type { DeliveryConfig } from "@/lib/delivery";
-export { DEFAULT_DELIVERY_CONFIG } from "@/lib/delivery";
+import { type DeliveryConfig, DEFAULT_DELIVERY_CONFIG } from "@/lib/delivery";
+export type { DeliveryConfig };
 
 export async function getDeliveryConfig(): Promise<DeliveryConfig> {
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'delivery_config' LIMIT 1`;
