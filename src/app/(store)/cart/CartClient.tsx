@@ -120,8 +120,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   }
 
   function selectPrediction(description: string) {
-    const short = description.split(",")[0].trim();
-    setForm((prev) => ({ ...prev, address: short }));
+    setForm((prev) => ({ ...prev, address: description }));
     setPredictions([]);
     setShowPredictions(false);
     setAddressConfirmed(true);
