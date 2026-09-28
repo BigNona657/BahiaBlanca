@@ -498,6 +498,45 @@ export async function saveImperdibles(
   }
 }
 
+// ─── Delivery config ────────────────────────────────────────────────────────
+
+export type DeliveryConfig = {
+  base_fee: number;
+  price_per_km: number;
+  free_from: number;
+  max_km: number;
+};
+
+export const DEFAULT_DELIVERY_CONFIG: DeliveryConfig = {
+  base_fee: 0,
+  price_per_km: 0,
+  free_from: 50000,
+  max_km: 0,
+};
+
+export async function getDeliveryConfig(): Promise<DeliveryConfig> {
+  const rows = await sql`SELECT value FROM app_settings WHERE key = 'delivery_config' LIMIT 1`;
+  if (!rows.length) return DEFAULT_DELIVERY_CONFIG;
+  try { return JSON.parse(rows[0].value as string); } catch { return DEFAULT_DELIVERY_CONFIG; }
+}
+
+export async function saveDeliveryConfig(
+  config: DeliveryConfig
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") return { success: false, error: "No autorizado." };
+  try {
+    const value = JSON.stringify(config);
+    await sql`
+      INSERT INTO app_settings (key, value) VALUES ('delivery_config', ${value})
+      ON CONFLICT (key) DO UPDATE SET value = ${value}
+    `;
+    return { success: true };
+  } catch {
+    return { success: false, error: "No se pudo guardar la configuración de envío." };
+  }
+}
+
 export async function saveAppSettings(
   data: Partial<AppSettings>
 ): Promise<{ success: boolean; error?: string }> {

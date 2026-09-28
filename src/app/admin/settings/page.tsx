@@ -1,4 +1,4 @@
-import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles, getPizzaFlavors, getEmpanadasFlavors, getMilanesaSettings } from "@/lib/actions/settings";
+import { getAppSettings, getIceCreamFlavors, getIceCreamPotes, getDailyMenus, getImperdibles, getPizzaFlavors, getEmpanadasFlavors, getMilanesaSettings, getDeliveryConfig } from "@/lib/actions/settings";
 import SettingsForm from "@/components/admin/SettingsForm";
 import IceCreamFlavorsForm from "@/components/admin/IceCreamFlavorsForm";
 import IceCreamPotesForm from "@/components/admin/IceCreamPotesForm";
@@ -7,11 +7,12 @@ import ImperdiblesForm from "@/components/admin/ImperdiblesForm";
 import PizzaFlavorsForm from "@/components/admin/PizzaFlavorsForm";
 import EmpanadasFlavorsForm from "@/components/admin/EmpanadasFlavorsForm";
 import MilanesaSettingsForm from "@/components/admin/MilanesaSettingsForm";
+import DeliverySettingsForm from "@/components/admin/DeliverySettingsForm";
 
 export const revalidate = 0;
 
 export default async function AdminSettingsPage() {
-  const [settings, flavors, potes, dailyMenus, imperdibles, pizzaFlavors, empanadasFlavors, milanesaSettings] = await Promise.all([
+  const [settings, flavors, potes, dailyMenus, imperdibles, pizzaFlavors, empanadasFlavors, milanesaSettings, deliveryConfig] = await Promise.all([
     getAppSettings(),
     getIceCreamFlavors(),
     getIceCreamPotes(),
@@ -20,6 +21,7 @@ export default async function AdminSettingsPage() {
     getPizzaFlavors(),
     getEmpanadasFlavors(),
     getMilanesaSettings(),
+    getDeliveryConfig(),
   ]);
 
   return (
@@ -31,6 +33,12 @@ export default async function AdminSettingsPage() {
 
       <div className="bg-white rounded-2xl shadow-sm p-5">
         <SettingsForm initial={settings} />
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-5">
+        <h2 className="text-base font-bold text-gray-700 mb-1">Envíos 🛵</h2>
+        <p className="text-xs text-gray-400 mb-4">Configurá el costo de envío según la distancia.</p>
+        <DeliverySettingsForm initial={deliveryConfig} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-5">

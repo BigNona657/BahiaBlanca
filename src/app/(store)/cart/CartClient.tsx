@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -23,9 +23,15 @@ const INITIAL_FORM: CheckoutFormData = {
   paymentMethod: "TRANSFER",
 };
 
+type DeliveryState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "free"; reason: string }
+  | { status: "calculated"; fee: number; distance_km: number }
+  | { status: "error"; message: string };
+
 export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFlavors: TartaFlavor[]; empanadasFlavors: EmpanadasFlavor[] }) {
-  const { items, totalItems, totalPrice, addToCart, decrementFromCart, removeFromCart, updateItem, clearCart } =
-    useCart();
+  const { items, totalItems, totalPrice, addToCart, decrementFromCart, removeFromCart, updateItem, clearCart } = useCart();
   const { data: session } = useSession();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -36,18 +42,56 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [error, setError] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   const isDelivery = form.deliveryType === "DELIVERY";
 
-  function handleField(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) {
+  const deliveryFee = delivery.status === "calculated" ? delivery.fee
+    : delivery.status === "free" ? 0
+    : null;
+
+  const orderTotal = deliveryFee !== null ? totalPrice + deliveryFee : totalPrice;
+
+  const calculateDelivery = useCallback((street: string, streetNumber: string, subtotal: number) => {
+    if (!street.trim() || !streetNumber.trim()) {
+      setDelivery({ status: "idle" });
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setDelivery({ status: "loading" });
+      try {
+        const address = `${street.trim()} ${streetNumber.trim()}`;
+        const res = await fetch(`/api/delivery-cost?address=${encodeURIComponent(address)}&subtotal=${subtotal}`);
+        const data = await res.json();
+        if (!res.ok) {
+          setDelivery({ status: "error", message: data.error ?? "No se pudo calcular el envío" });
+        } else if (data.free) {
+          setDelivery({ status: "free", reason: "¡Envío gratis por el monto de tu pedido! 🎉" });
+        } else {
+          setDelivery({ status: "calculated", fee: data.fee, distance_km: data.distance_km });
+        }
+      } catch {
+        setDelivery({ status: "error", message: "Error al calcular el envío" });
+      }
+    }, 800);
+  }, []);
+
+  // Recalcular cuando cambia calle, número o subtotal
+  useEffect(() => {
+    if (!isDelivery) { setDelivery({ status: "idle" }); return; }
+    calculateDelivery(form.street, form.streetNumber, totalPrice);
+  }, [form.street, form.streetNumber, totalPrice, isDelivery, calculateDelivery]);
+
+  function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
+    setDelivery({ status: "idle" });
     setForm((prev) => ({
       ...prev,
       deliveryType: type,
@@ -58,6 +102,14 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (isDelivery && delivery.status === "loading") {
+      setError("Esperá a que se calcule el costo de envío.");
+      return;
+    }
+    if (isDelivery && delivery.status === "error") {
+      setError("Verificá la dirección de entrega.");
+      return;
+    }
     if (form.paymentMethod === "TRANSFER") {
       setShowTransferModal(true);
       return;
@@ -67,7 +119,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
   function confirmOrder() {
     startTransition(async () => {
-      const result = await createOrder(form, items);
+      const result = await createOrder(form, items, isDelivery ? (deliveryFee ?? 0) : 0);
       if (result.success) {
         router.push(`/orders/${result.orderId}?new=1`);
         clearCart();
@@ -127,16 +179,29 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                 <span>Subtotal ({totalItems} {totalItems === 1 ? "ítem" : "ítems"})</span>
                 <span>${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}</span>
               </div>
+
               {isDelivery && (
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>Envío</span>
-                  <span className="text-orange-500 font-medium">A pagar al repartidor</span>
+                  <span>
+                    {delivery.status === "idle" && <span className="text-gray-400">Ingresá tu dirección</span>}
+                    {delivery.status === "loading" && <span className="text-gray-400 animate-pulse">Calculando...</span>}
+                    {delivery.status === "free" && <span className="text-green-600 font-semibold">¡Gratis! 🎉</span>}
+                    {delivery.status === "calculated" && (
+                      <span className="text-orange-500 font-medium">
+                        ${delivery.fee.toLocaleString("es-AR")}
+                        <span className="text-xs text-gray-400 ml-1">({delivery.distance_km} km)</span>
+                      </span>
+                    )}
+                    {delivery.status === "error" && <span className="text-red-400 text-xs">{delivery.message}</span>}
+                  </span>
                 </div>
               )}
+
               <div className="flex justify-between text-base font-bold text-gray-800 pt-1">
                 <span>Total</span>
                 <span className="text-brand-600">
-                  ${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                  ${orderTotal.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
                 </span>
               </div>
             </div>
@@ -161,8 +226,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                 >
                   <span className="text-xl">🛵</span>
                   <span>Delivery</span>
-                  <span className="text-xs font-semibold text-orange-500">por Uber Envíos</span>
-                  <span className="text-xs font-normal opacity-70">Solo transferencia</span>
                 </button>
                 <button
                   type="button"
@@ -236,6 +299,21 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                   </Field>
                 </div>
 
+                {/* Feedback de envío inline */}
+                {delivery.status !== "idle" && (
+                  <div className={`rounded-xl px-3 py-2.5 text-sm flex items-center gap-2 ${
+                    delivery.status === "free" ? "bg-green-50 text-green-700" :
+                    delivery.status === "calculated" ? "bg-orange-50 text-orange-700" :
+                    delivery.status === "error" ? "bg-red-50 text-red-500" :
+                    "bg-gray-50 text-gray-400"
+                  }`}>
+                    {delivery.status === "loading" && <><span className="animate-spin">⏳</span> Calculando costo de envío...</>}
+                    {delivery.status === "free" && <>{delivery.reason}</>}
+                    {delivery.status === "calculated" && <>🛵 Envío: <strong>${delivery.fee.toLocaleString("es-AR")}</strong> ({delivery.distance_km} km)</>}
+                    {delivery.status === "error" && <>⚠️ {delivery.message}</>}
+                  </div>
+                )}
+
                 <Field label="Piso / Depto">
                   <input
                     name="apartment"
@@ -291,17 +369,13 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || delivery.status === "loading"}
               className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition text-base"
             >
-              {isPending ? "Confirmando pedido..." : `Confirmar pedido · $${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`}
+              {isPending
+                ? "Confirmando pedido..."
+                : `Confirmar pedido · $${orderTotal.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`}
             </button>
-
-            {isDelivery && (
-              <p className="text-xs text-center text-gray-400 leading-snug">
-                🛵 Los envíos se realizan a través de <span className="font-semibold text-gray-500">Uber Envíos</span>. El costo del envío será abonado por el cliente al momento de la entrega.
-              </p>
-            )}
           </form>
         </div>
       </div>
@@ -328,11 +402,27 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
               </button>
             </div>
 
-            <div className="bg-brand-50 rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-sm text-gray-500">Monto a transferir</p>
-              <p className="text-xl font-bold text-brand-600">
-                ${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-              </p>
+            <div className="bg-brand-50 rounded-2xl px-4 py-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">Subtotal</p>
+                <p className="text-sm font-medium text-gray-700">${totalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}</p>
+              </div>
+              {isDelivery && deliveryFee !== null && deliveryFee > 0 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">Envío</p>
+                  <p className="text-sm font-medium text-gray-700">${deliveryFee.toLocaleString("es-AR")}</p>
+                </div>
+              )}
+              {isDelivery && delivery.status === "free" && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">Envío</p>
+                  <p className="text-sm font-semibold text-green-600">¡Gratis!</p>
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-1 border-t border-brand-100">
+                <p className="text-sm text-gray-500">Total a transferir</p>
+                <p className="text-xl font-bold text-brand-600">${orderTotal.toLocaleString("es-AR", { minimumFractionDigits: 0 })}</p>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-1">

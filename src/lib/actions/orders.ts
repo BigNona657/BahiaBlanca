@@ -120,7 +120,8 @@ export async function getClientOrderDetail(
 
 export async function createOrder(
   formData: CheckoutFormData,
-  items: CartItem[]
+  items: CartItem[],
+  deliveryFee = 0
 ): Promise<CheckoutResult> {
   if (!items.length) return { success: false, error: "El carrito está vacío." };
 
@@ -147,7 +148,8 @@ export async function createOrder(
     (sum, i) => sum + (i.unitPrice ?? parseFloat(i.product.price)) * i.quantity,
     0
   );
-  const total = subtotal;
+  const fee = formData.deliveryType === "TAKEAWAY" ? 0 : deliveryFee;
+  const total = subtotal + fee;
 
   // Armar nota con los ítems especiales (menú del día e imperdibles)
   const specialNote = specialItems.length
@@ -161,7 +163,7 @@ export async function createOrder(
 
     const orderRows = await sql`
       INSERT INTO orders (user_id, status, payment_method, delivery_address, phone, subtotal, delivery_fee, total, notes)
-      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, 0, ${total}, ${specialNote})
+      VALUES (${userId}, 'PENDING', ${formData.paymentMethod}, ${deliveryAddress}, ${formData.phone}, ${subtotal}, ${fee}, ${total}, ${specialNote})
       RETURNING id
     `;
     const orderId = orderRows[0].id as number;
