@@ -43,6 +43,9 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [mounted, setMounted] = useState(false);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [predictions, setPredictions] = useState<{ description: string; place_id: string }[]>([]);
+  const [showPredictions, setShowPredictions] = useState(false);
+  const placesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -85,7 +88,32 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   }, [form.address, totalPrice, isDelivery, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "address") fetchPredictions(value);
+  }
+
+  function fetchPredictions(value: string) {
+    if (placesDebounceRef.current) clearTimeout(placesDebounceRef.current);
+    if (!value.trim() || value.length < 4) { setPredictions([]); return; }
+    placesDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places?input=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        setPredictions(data.predictions ?? []);
+        setShowPredictions(true);
+      } catch {
+        setPredictions([]);
+      }
+    }, 400);
+  }
+
+  function selectPrediction(description: string) {
+    // Extraer solo calle y número (antes de la primera coma)
+    const short = description.split(",")[0].trim();
+    setForm((prev) => ({ ...prev, address: short }));
+    setPredictions([]);
+    setShowPredictions(false);
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
@@ -273,14 +301,33 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
             {isDelivery && (
               <>
                 <Field label="Dirección *">
-                  <input
-                    name="address"
-                    required
-                    placeholder="Av. Alem 1234"
-                    value={form.address}
-                    onChange={handleField}
-                    className={inputCls}
-                  />
+                  <div className="relative">
+                    <input
+                      name="address"
+                      required
+                      autoComplete="off"
+                      placeholder="Av. Alem 1234"
+                      value={form.address}
+                      onChange={handleField}
+                      onFocus={() => predictions.length > 0 && setShowPredictions(true)}
+                      onBlur={() => setTimeout(() => setShowPredictions(false), 150)}
+                      className={inputCls}
+                    />
+                    {showPredictions && predictions.length > 0 && (
+                      <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {predictions.map((p) => (
+                          <li
+                            key={p.place_id}
+                            onMouseDown={() => selectPrediction(p.description)}
+                            className="px-3 py-2.5 text-sm text-gray-700 hover:bg-brand-50 cursor-pointer border-b border-gray-100 last:border-0"
+                          >
+                            📍 {p.description.split(",")[0]}
+                            <span className="text-xs text-gray-400 ml-1">{p.description.split(",").slice(1).join(",")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </Field>
 
                 {/* Feedback de envío inline */}
