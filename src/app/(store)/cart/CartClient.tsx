@@ -132,7 +132,14 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
       return;
     }
     if (isDelivery && delivery.status === "idle") {
-      setError("Ingresá y seleccioná tu dirección de entrega.");
+      if (form.address.trim().length >= 5) {
+        // Calcular y esperar
+        setAddressConfirmed(true);
+        calculateDelivery(form.address, totalPrice, undefined);
+        setError("Calculando el costo de envío, intentá de nuevo en un momento.");
+      } else {
+        setError("Ingresá tu dirección de entrega.");
+      }
       return;
     }
     if (form.paymentMethod === "TRANSFER") {

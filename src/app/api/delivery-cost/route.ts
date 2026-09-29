@@ -97,15 +97,36 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
+  let resolvedLat = hasCoords ? lat : NaN;
+  let resolvedLng = hasCoords ? lng : NaN;
+
+  if (!hasCoords && hasAddress) {
+    const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    geocodeUrl.searchParams.set("address", `${rawAddress!.trim()}, ${CITY_SUFFIX}`);
+    geocodeUrl.searchParams.set("key", apiKey);
+    try {
+      const geoRes = await fetch(geocodeUrl.toString());
+      const geoData = await geoRes.json();
+      if (geoData.status === "OK" && geoData.results?.[0]?.geometry?.location) {
+        resolvedLat = geoData.results[0].geometry.location.lat;
+        resolvedLng = geoData.results[0].geometry.location.lng;
+      } else {
+        console.warn("[delivery-cost] geocode failed, status:", geoData.status, "| address:", sanitizeForLog(rawAddress!.trim()));
+      }
+    } catch {
+      console.warn("[delivery-cost] geocode request error");
+    }
+  }
+
   let element: GMElement | null = null;
   let mode = "address";
 
-  if (hasCoords) {
-    element = await callDistanceMatrix(ORIGIN_COORDS, `${lat},${lng}`, apiKey);
+  if (!isNaN(resolvedLat) && !isNaN(resolvedLng)) {
+    element = await callDistanceMatrix(ORIGIN_COORDS, `${resolvedLat},${resolvedLng}`, apiKey);
     if (element?.status === "OK" && element.distance) {
-      mode = "coords";
+      mode = hasCoords ? "coords" : "geocoded";
     } else {
-      console.warn("[delivery-cost] coords fallback triggered, status:", element?.status);
+      console.warn("[delivery-cost] coords attempt failed, status:", element?.status);
       element = null;
     }
   }
