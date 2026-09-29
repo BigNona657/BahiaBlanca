@@ -112,7 +112,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
     setDelivery({ status: "idle" });
     setAddressConfirmed(false);
-    setPredictions([]);
     coordsRef.current = null;
     setForm((prev) => ({
       ...prev,
