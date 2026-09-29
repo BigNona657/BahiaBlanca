@@ -111,10 +111,14 @@ export async function GET(req: Request) {
         resolvedLat = geoData.results[0].geometry.location.lat;
         resolvedLng = geoData.results[0].geometry.location.lng;
       } else {
-        console.warn("[delivery-cost] geocode failed, status:", geoData.status, "| address:", sanitizeForLog(rawAddress!.trim()));
+        console.warn(
+          "[delivery-cost] Geocode falló con status:", geoData.status,
+          "| Mensaje de Google:", geoData.error_message || "Sin mensaje detallado",
+          "| Dirección:", sanitizeForLog(rawAddress!.trim())
+        );
       }
-    } catch {
-      console.warn("[delivery-cost] geocode request error");
+    } catch (err) {
+      console.warn("[delivery-cost] Error en la petición a Geocode:", err);
     }
   }
 
