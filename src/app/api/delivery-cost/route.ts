@@ -6,7 +6,7 @@ const ORIGIN_COORDS = "-38.7183,-62.2663";
 const ORIGIN_ADDRESS = "Vicente Fatone 657, Bahía Blanca, Buenos Aires, Argentina";
 const CITY_SUFFIX = "Bahía Blanca, Buenos Aires, Argentina";
 
-type GMElement = { status: string; distance: { value: number } };
+type GMElement = { status: string; distance?: { value: number } };
 type GMRow = { elements: GMElement[] };
 
 type DeliveryResult =
@@ -55,7 +55,6 @@ async function callDistanceMatrix(
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  // ── Validar subtotal ──────────────────────────────────────────────────────
   const rawSubtotal = searchParams.get("subtotal");
   const subtotal = rawSubtotal !== null ? Number(rawSubtotal) : 0;
   if (isNaN(subtotal) || subtotal < 0) {
@@ -65,7 +64,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── Validar coordenadas o dirección ───────────────────────────────────────
   const rawLat = searchParams.get("lat");
   const rawLng = searchParams.get("lng");
   const rawAddress = searchParams.get("address");
@@ -82,14 +80,12 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── Config de envío ───────────────────────────────────────────────────────
   const rows = await sql`SELECT value FROM app_settings WHERE key = 'delivery_config' LIMIT 1`;
   let config: DeliveryConfig = DEFAULT_DELIVERY_CONFIG;
   try {
     if (rows[0]?.value) config = JSON.parse(rows[0].value as string);
   } catch {}
 
-  // Envío gratis por monto — no necesita llamar a Google
   if (config.free_from > 0 && subtotal >= config.free_from) {
     const result: DeliveryResult = { deliverable: true, fee: 0, distance_km: null, free: true, reason: "monto" };
     return NextResponse.json(result);
@@ -97,21 +93,18 @@ export async function GET(req: Request) {
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    // Sin key configurada: envío gratis para no bloquear
     const result: DeliveryResult = { deliverable: true, fee: 0, distance_km: null, free: true, reason: "config" };
     return NextResponse.json(result);
   }
 
-  // ── Estrategia fallback: coords → texto ───────────────────────────────────
   let element: GMElement | null = null;
   let mode = "address";
 
   if (hasCoords) {
     element = await callDistanceMatrix(ORIGIN_COORDS, `${lat},${lng}`, apiKey);
-    if (element?.status === "OK") {
+    if (element?.status === "OK" && element.distance) {
       mode = "coords";
     } else {
-      // Fallback a texto si las coords no dieron resultado
       console.warn("[delivery-cost] coords fallback triggered, status:", element?.status);
       element = null;
     }
@@ -120,7 +113,7 @@ export async function GET(req: Request) {
   if (!element && hasAddress) {
     const destination = buildDestinationFromAddress(rawAddress!.trim());
     element = await callDistanceMatrix(ORIGIN_ADDRESS, destination, apiKey);
-    if (element?.status === "OK") {
+    if (element?.status === "OK" && element.distance) {
       mode = "address";
     } else {
       console.warn(
@@ -131,8 +124,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // ── Ambos intentos fallaron ───────────────────────────────────────────────
-  if (!element || element.status !== "OK") {
+  if (!element || element.status !== "OK" || !element.distance) {
     const result: DeliveryResult = {
       deliverable: false,
       error: "No pudimos calcular la ruta a esa ubicación. Verificá que sea una calle válida de Bahía Blanca.",
@@ -140,7 +132,6 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
-  // ── Verificar cobertura ───────────────────────────────────────────────────
   const distance_km = element.distance.value / 1000;
 
   if (config.max_km > 0 && distance_km > config.max_km) {
@@ -152,7 +143,6 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
-  // ── Calcular costo ────────────────────────────────────────────────────────
   const fee = Math.round(config.base_fee + distance_km * config.price_per_km);
 
   const result: DeliveryResult = {
