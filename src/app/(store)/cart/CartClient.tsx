@@ -43,9 +43,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [mounted, setMounted] = useState(false);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [predictions, setPredictions] = useState<{ description: string; place_id: string }[]>([]);
-  const [showPredictions, setShowPredictions] = useState(false);
-  const placesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -96,10 +93,11 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
   const [addressConfirmed, setAddressConfirmed] = useState(false);
 
-  // Resetear delivery cuando cambia el tipo de entrega
   useEffect(() => {
-    if (!isDelivery) setDelivery({ status: "idle" });
-  }, [isDelivery]);
+    if (!isDelivery) { setDelivery({ status: "idle" }); return; }
+    if (!addressConfirmed) return;
+    calculateDelivery(form.address, totalPrice, undefined);
+  }, [form.address, totalPrice, isDelivery, addressConfirmed, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -108,50 +106,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
       setAddressConfirmed(false);
       setDelivery({ status: "idle" });
       coordsRef.current = null;
-      fetchPredictions(value);
     }
-  }
-
-  function fetchPredictions(value: string) {
-    if (placesDebounceRef.current) clearTimeout(placesDebounceRef.current);
-    if (!value.trim() || value.length < 4) { setPredictions([]); return; }
-    placesDebounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/places?input=${encodeURIComponent(value)}`);
-        const data = await res.json();
-        setPredictions(data.predictions ?? []);
-        setShowPredictions(true);
-      } catch {
-        setPredictions([]);
-      }
-    }, 400);
-  }
-
-  async function selectPrediction(description: string, placeId: string) {
-    setForm((prev) => ({ ...prev, address: description }));
-    setPredictions([]);
-    setShowPredictions(false);
-    coordsRef.current = null;
-    setAddressConfirmed(false);
-
-    let finalAddress = description;
-    let coords: { lat: number; lng: number } | undefined;
-
-    try {
-      const res = await fetch(`/api/places/details?place_id=${encodeURIComponent(placeId)}`);
-      const data = await res.json();
-      if (res.ok && data.lat && data.lng) {
-        coords = { lat: data.lat, lng: data.lng };
-        coordsRef.current = coords;
-        if (data.formatted_address) {
-          finalAddress = data.formatted_address;
-          setForm((prev) => ({ ...prev, address: data.formatted_address }));
-        }
-      }
-    } catch {}
-
-    setAddressConfirmed(true);
-    calculateDelivery(finalAddress, totalPrice, coords);
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
@@ -346,7 +301,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
             {isDelivery && (
               <>
                 <Field label="Dirección *">
-                  <div className="relative">
                     <input
                       name="address"
                       required
@@ -354,25 +308,13 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                       placeholder="Av. Alem 1234"
                       value={form.address}
                       onChange={handleField}
-                      onFocus={() => predictions.length > 0 && setShowPredictions(true)}
-                      onBlur={() => setTimeout(() => setShowPredictions(false), 150)}
+                      onBlur={() => {
+                        if (isDelivery && form.address.trim().length >= 5) {
+                          setAddressConfirmed(true);
+                        }
+                      }}
                       className={inputCls}
                     />
-                    {showPredictions && predictions.length > 0 && (
-                      <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                        {predictions.map((p) => (
-                          <li
-                            key={p.place_id}
-                            onMouseDown={() => selectPrediction(p.description, p.place_id)}
-                            className="px-3 py-2.5 text-sm text-gray-700 hover:bg-brand-50 cursor-pointer border-b border-gray-100 last:border-0"
-                          >
-                            📍 {p.description.split(",")[0]}
-                            <span className="text-xs text-gray-400 ml-1">{p.description.split(",").slice(1).join(",")}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
                 </Field>
 
                 {/* Feedback de envío inline */}
