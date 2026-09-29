@@ -45,9 +45,20 @@ async function callDistanceMatrix(
     const res = await fetch(gmUrl.toString(), { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
+
+    // Si Google responde con un error general (ej: REQUEST_DENIED, OVER_QUERY_LIMIT)
+    if (data.status !== "OK") {
+      console.warn(
+        "[delivery-cost] Distance Matrix root error:", data.status,
+        "| Mensaje:", data.error_message || "Sin mensaje"
+      );
+      return null;
+    }
+
     return (data?.rows as GMRow[])?.[0]?.elements?.[0] ?? null;
-  } catch {
+  } catch (err) {
     clearTimeout(timeout);
+    console.warn("[delivery-cost] Fetch Distance Matrix failed:", err);
     return null;
   }
 }
