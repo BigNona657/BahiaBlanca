@@ -72,12 +72,10 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
       setDelivery({ status: "loading" });
       try {
         // Usar coordenadas si están disponibles (más preciso)
-        const params = new URLSearchParams({ subtotal: String(subtotal) });
+        const params = new URLSearchParams({ subtotal: String(subtotal), address });
         if (coords) {
           params.set("lat", String(coords.lat));
           params.set("lng", String(coords.lng));
-        } else {
-          params.set("address", address);
         }
         const res = await fetch(`/api/delivery-cost?${params.toString()}`);
         const data = await res.json();
