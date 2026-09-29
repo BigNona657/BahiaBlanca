@@ -98,12 +98,10 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
 
   const [addressConfirmed, setAddressConfirmed] = useState(false);
 
-  // Recalcular solo cuando la dirección fue confirmada via autocomplete
+  // Resetear delivery cuando cambia el tipo de entrega
   useEffect(() => {
-    if (!isDelivery) { setDelivery({ status: "idle" }); return; }
-    if (!addressConfirmed) return;
-    calculateDelivery(form.address, totalPrice, coordsRef.current ?? undefined);
-  }, [form.address, totalPrice, isDelivery, addressConfirmed, calculateDelivery]);
+    if (!isDelivery) setDelivery({ status: "idle" });
+  }, [isDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -136,21 +134,26 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     setPredictions([]);
     setShowPredictions(false);
     coordsRef.current = null;
+    setAddressConfirmed(false);
 
-    // Obtener coordenadas exactas via Place Details
+    let finalAddress = description;
+    let coords: { lat: number; lng: number } | undefined;
+
     try {
       const res = await fetch(`/api/places/details?place_id=${encodeURIComponent(placeId)}`);
       const data = await res.json();
       if (res.ok && data.lat && data.lng) {
-        coordsRef.current = { lat: data.lat, lng: data.lng };
-        // Si el servidor devuelve una dirección formateada, usarla
+        coords = { lat: data.lat, lng: data.lng };
+        coordsRef.current = coords;
         if (data.formatted_address) {
+          finalAddress = data.formatted_address;
           setForm((prev) => ({ ...prev, address: data.formatted_address }));
         }
       }
     } catch {}
 
     setAddressConfirmed(true);
+    calculateDelivery(finalAddress, totalPrice, coords);
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
