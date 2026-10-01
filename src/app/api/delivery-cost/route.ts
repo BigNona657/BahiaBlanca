@@ -42,11 +42,11 @@ async function callDistanceMatrix(
     const res = await fetch(gmUrl.toString(), { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
-    console.log("[delivery-cost] Distance Matrix raw status:", data.status, "| dest:", sanitizeForLog(destination));
+    console.log("[delivery-cost] DM status:", data.status, "| element status:", (data?.rows as GMRow[])?.[0]?.elements?.[0]?.status, "| dest:", sanitizeForLog(destination));
     return (data?.rows as GMRow[])?.[0]?.elements?.[0] ?? null;
   } catch (err) {
     clearTimeout(timeout);
-    console.warn("[delivery-cost] Fetch Distance Matrix failed:", err);
+    console.warn("[delivery-cost] DM fetch FAILED:", String(err), "| dest:", sanitizeForLog(destination));
     return null;
   }
 }
@@ -101,6 +101,7 @@ export async function GET(req: Request) {
 
   if (!hasCoords && hasAddress) {
     const normalizedAddress = normalizeAddress(rawAddress!);
+    console.log("[delivery-cost] Iniciando geocode para:", sanitizeForLog(normalizedAddress));
     const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
     geocodeUrl.searchParams.set("address", normalizedAddress);
     geocodeUrl.searchParams.set(
