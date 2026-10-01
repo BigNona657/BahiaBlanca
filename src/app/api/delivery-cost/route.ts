@@ -158,7 +158,7 @@ export async function GET(req: Request) {
 
   if (!element && hasAddress) {
     const destination = normalizeAddress(rawAddress!);
-    element = await callDistanceMatrix(ORIGIN_ADDRESS, destination, apiKey);
+    element = await callDistanceMatrix(ORIGIN_COORDS, destination, apiKey);
     if (element?.status === "OK" && element.distance) {
       mode = "address";
     } else {

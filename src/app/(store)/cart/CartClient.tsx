@@ -44,6 +44,9 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [predictions, setPredictions] = useState<{ description: string; place_id: string }[]>([]);
+  const [showPredictions, setShowPredictions] = useState(false);
+  const placesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -107,12 +110,47 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     setForm((prev) => ({ ...prev, [name]: value }));
     if (name === "address") {
       coordsRef.current = null;
+      if (value.trim().length >= 3) {
+        if (placesDebounceRef.current) clearTimeout(placesDebounceRef.current);
+        placesDebounceRef.current = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/places?input=${encodeURIComponent(value)}`);
+            const data = await res.json();
+            setPredictions(data.predictions ?? []);
+            setShowPredictions((data.predictions ?? []).length > 0);
+          } catch {
+            setPredictions([]);
+          }
+        }, 350);
+      } else {
+        setPredictions([]);
+        setShowPredictions(false);
+      }
     }
+  }
+
+  async function selectPrediction(description: string, placeId: string) {
+    setPredictions([]);
+    setShowPredictions(false);
+    setForm((prev) => ({ ...prev, address: description }));
+    coordsRef.current = null;
+    try {
+      const res = await fetch(`/api/places/details?place_id=${encodeURIComponent(placeId)}`);
+      const data = await res.json();
+      if (res.ok && data.lat && data.lng) {
+        coordsRef.current = { lat: data.lat, lng: data.lng };
+        if (data.formatted_address) {
+          setForm((prev) => ({ ...prev, address: data.formatted_address }));
+        }
+      }
+    } catch {}
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
     setDelivery({ status: "idle" });
     coordsRef.current = null;
+    setPredictions([]);
+    setShowPredictions(false);
     setForm((prev) => ({
       ...prev,
       deliveryType: type,
@@ -305,6 +343,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
             {isDelivery && (
               <>
                 <Field label="Dirección *">
+                  <div className="relative">
                     <input
                       name="address"
                       required
@@ -312,8 +351,24 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                       placeholder="Av. Alem 1234"
                       value={form.address}
                       onChange={handleField}
+                      onBlur={() => setTimeout(() => setShowPredictions(false), 150)}
                       className={inputCls}
                     />
+                    {showPredictions && predictions.length > 0 && (
+                      <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {predictions.map((p) => (
+                          <li
+                            key={p.place_id}
+                            onMouseDown={() => selectPrediction(p.description, p.place_id)}
+                            className="px-3 py-2.5 text-sm text-gray-700 hover:bg-brand-50 cursor-pointer border-b border-gray-100 last:border-0"
+                          >
+                            📍 {p.description.split(",")[0]}
+                            <span className="text-xs text-gray-400 ml-1">{p.description.split(",").slice(1).join(",")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </Field>
 
                 {/* Feedback de envío inline */}
