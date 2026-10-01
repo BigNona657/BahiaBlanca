@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { type DeliveryConfig, DEFAULT_DELIVERY_CONFIG } from "@/lib/delivery";
 
-const ORIGIN_COORDS = "-38.7183,-62.2663";
-const ORIGIN_ADDRESS = "Vicente Fatone 657, Bahía Blanca, Buenos Aires, Argentina";
 const CITY_SUFFIX = "Bahía Blanca, Buenos Aires, Argentina";
-
-type GMElement = { status: string; distance?: { value: number } };
-type GMRow = { elements: GMElement[] };
 
 type DeliveryResult =
   | { deliverable: true; fee: number; distance_km: number; free: false; mode: string }
@@ -25,30 +20,38 @@ function sanitizeForLog(value: string): string {
   return value.replace(/[\r\n\t\0]/g, " ").replace(/[^\x20-\x7E\u00C0-\u024F]/g, "?").slice(0, 150);
 }
 
-async function callDistanceMatrix(
-  origin: string,
+async function callRoutesAPI(
   destination: string,
   apiKey: string
-): Promise<GMElement | null> {
-  const gmUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-  gmUrl.searchParams.set("origins", origin);
-  gmUrl.searchParams.set("destinations", destination);
-  gmUrl.searchParams.set("units", "metric");
-  gmUrl.searchParams.set("key", apiKey);
-
+): Promise<{ distanceMeters: number } | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    console.log("[delivery-cost] DM calling:", sanitizeForLog(destination));
-    const res = await fetch(gmUrl.toString(), { signal: controller.signal });
+    console.log("[delivery-cost] Routes API calling:", sanitizeForLog(destination));
+    const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "routes.distanceMeters",
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: -38.7183, longitude: -62.2663 } } },
+        destination: { address: destination },
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_UNAWARE",
+      }),
+    });
     clearTimeout(timeout);
     const data = await res.json();
-    const elementStatus = (data?.rows as GMRow[])?.[0]?.elements?.[0]?.status;
-    console.log("[delivery-cost] DM status:", data.status, "| element:", elementStatus);
-    return (data?.rows as GMRow[])?.[0]?.elements?.[0] ?? null;
+    console.log("[delivery-cost] Routes API response:", JSON.stringify(data).slice(0, 200));
+    const distanceMeters = data?.routes?.[0]?.distanceMeters;
+    if (typeof distanceMeters === "number") return { distanceMeters };
+    return null;
   } catch (err) {
     clearTimeout(timeout);
-    console.warn("[delivery-cost] DM FAILED:", String(err));
+    console.warn("[delivery-cost] Routes API FAILED:", String(err));
     return null;
   }
 }
@@ -146,34 +149,52 @@ export async function GET(req: Request) {
     }
   }
 
-  let element: GMElement | null = null;
+  let routeResult: { distanceMeters: number } | null = null;
   let mode = "address";
 
   if (!isNaN(resolvedLat) && !isNaN(resolvedLng)) {
-    element = await callDistanceMatrix(ORIGIN_COORDS, `${resolvedLat},${resolvedLng}`, apiKey);
-    if (element?.status === "OK" && element.distance) {
-      mode = hasCoords ? "coords" : "geocoded";
-    } else {
-      console.warn("[delivery-cost] coords attempt failed, status:", element?.status);
-      element = null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      console.log("[delivery-cost] Routes API (coords):", resolvedLat, resolvedLng);
+      const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": "routes.distanceMeters",
+        },
+        body: JSON.stringify({
+          origin: { location: { latLng: { latitude: -38.7183, longitude: -62.2663 } } },
+          destination: { location: { latLng: { latitude: resolvedLat, longitude: resolvedLng } } },
+          travelMode: "DRIVE",
+          routingPreference: "TRAFFIC_UNAWARE",
+        }),
+      });
+      clearTimeout(timeout);
+      const data = await res.json();
+      console.log("[delivery-cost] Routes (coords) response:", JSON.stringify(data).slice(0, 200));
+      const dm = data?.routes?.[0]?.distanceMeters;
+      if (typeof dm === "number") { routeResult = { distanceMeters: dm }; mode = hasCoords ? "coords" : "geocoded"; }
+    } catch (err) {
+      clearTimeout(timeout);
+      console.warn("[delivery-cost] Routes (coords) FAILED:", String(err));
     }
   }
 
-  if (!element && hasAddress) {
+  if (!routeResult && hasAddress) {
     const destination = normalizeAddress(rawAddress!);
-    element = await callDistanceMatrix(ORIGIN_COORDS, destination, apiKey);
-    if (element?.status === "OK" && element.distance) {
+    const result = await callRoutesAPI(destination, apiKey);
+    if (result) {
+      routeResult = result;
       mode = "address";
     } else {
-      console.warn(
-        "[delivery-cost] address attempt failed, status:", element?.status,
-        "| destination:", sanitizeForLog(destination)
-      );
-      element = null;
+      console.warn("[delivery-cost] Routes (address) failed | destination:", sanitizeForLog(destination));
     }
   }
 
-  if (!element || element.status !== "OK" || !element.distance) {
+  if (!routeResult) {
     const result: DeliveryResult = {
       deliverable: false,
       error: "No pudimos calcular la ruta a esa ubicación. Verificá que sea una calle válida de Bahía Blanca.",
@@ -181,7 +202,7 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
-  const distance_km = element.distance.value / 1000;
+  const distance_km = routeResult.distanceMeters / 1000;
 
   if (config.max_km > 0 && distance_km > config.max_km) {
     const result: DeliveryResult = {

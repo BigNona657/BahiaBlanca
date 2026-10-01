@@ -23,20 +23,28 @@ export async function GET() {
   }
 
   try {
-    const dmUrl = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
-    dmUrl.searchParams.set("origins", "-38.7183,-62.2663");
-    dmUrl.searchParams.set("destinations", "-38.72,-62.27");
-    dmUrl.searchParams.set("key", apiKey);
-    const res = await fetch(dmUrl.toString(), { signal: AbortSignal.timeout(10000) });
+    const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "routes.distanceMeters",
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: -38.7183, longitude: -62.2663 } } },
+        destination: { location: { latLng: { latitude: -38.72, longitude: -62.27 } } },
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_UNAWARE",
+      }),
+    });
     const data = await res.json();
-    results.distancematrix = {
-      status: data.status,
-      error_message: data.error_message ?? null,
-      element_status: data.rows?.[0]?.elements?.[0]?.status ?? null,
-      distance: data.rows?.[0]?.elements?.[0]?.distance ?? null,
+    results.routesapi = {
+      distanceMeters: data?.routes?.[0]?.distanceMeters ?? null,
+      error: data?.error ?? null,
     };
   } catch (err) {
-    results.distancematrix = { error: String(err) };
+    results.routesapi = { error: String(err) };
   }
 
   return NextResponse.json(results);
