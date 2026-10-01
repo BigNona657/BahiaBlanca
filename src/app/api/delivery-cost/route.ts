@@ -114,7 +114,7 @@ export async function GET(req: Request) {
     geocodeUrl.searchParams.set("address", normalizedAddress);
     geocodeUrl.searchParams.set(
       "components",
-      "locality:Bahía Blanca|administrative_area:Buenos Aires|country:AR"
+      "administrative_area:Buenos Aires|country:AR"
     );
     geocodeUrl.searchParams.set("region", "ar");
     geocodeUrl.searchParams.set("language", "es");
@@ -128,6 +128,14 @@ export async function GET(req: Request) {
       const validTypes = ["street_address", "premise", "subpremise", "route", "intersection"];
       const isSpecificAddress = firstResult?.types?.some((t: string) => validTypes.includes(t));
 
+      console.log(
+        "[delivery-cost] Geocode status:", geoData.status,
+        "| types:", firstResult?.types ?? "none",
+        "| isSpecific:", isSpecificAddress,
+        "| location:", firstResult?.geometry?.location ?? "none",
+        "| dir:", sanitizeForLog(normalizedAddress)
+      );
+
       if (geoData.status === "OK" && firstResult?.geometry?.location && isSpecificAddress) {
         resolvedLat = firstResult.geometry.location.lat;
         resolvedLng = firstResult.geometry.location.lng;
@@ -136,8 +144,7 @@ export async function GET(req: Request) {
           "[delivery-cost] Geocode sin dirección específica:",
           geoData.status,
           "| types:", firstResult?.types,
-          "| msg:", geoData.error_message || "N/A",
-          "| dir:", sanitizeForLog(rawAddress!.trim())
+          "| msg:", geoData.error_message || "N/A"
         );
       }
     } catch (err) {
