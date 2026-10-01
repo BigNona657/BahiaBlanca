@@ -37,16 +37,18 @@ async function callDistanceMatrix(
   gmUrl.searchParams.set("key", apiKey);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 12000);
   try {
+    console.log("[delivery-cost] DM calling:", sanitizeForLog(destination));
     const res = await fetch(gmUrl.toString(), { signal: controller.signal });
     clearTimeout(timeout);
     const data = await res.json();
-    console.log("[delivery-cost] DM status:", data.status, "| element status:", (data?.rows as GMRow[])?.[0]?.elements?.[0]?.status, "| dest:", sanitizeForLog(destination));
+    const elementStatus = (data?.rows as GMRow[])?.[0]?.elements?.[0]?.status;
+    console.log("[delivery-cost] DM status:", data.status, "| element:", elementStatus);
     return (data?.rows as GMRow[])?.[0]?.elements?.[0] ?? null;
   } catch (err) {
     clearTimeout(timeout);
-    console.warn("[delivery-cost] DM fetch FAILED:", String(err), "| dest:", sanitizeForLog(destination));
+    console.warn("[delivery-cost] DM FAILED:", String(err));
     return null;
   }
 }
