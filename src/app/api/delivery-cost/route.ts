@@ -14,14 +14,11 @@ type DeliveryResult =
   | { deliverable: true; fee: 0; distance_km: null; free: true; reason: string }
   | { deliverable: false; error: string; distance_km?: number };
 
-function buildDestinationFromAddress(address: string): string {
-  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
-  const street = parts[0];
-  const cityIndex = parts.findIndex((p) =>
-    p.toLowerCase().includes("bah") && p.toLowerCase().includes("blanca")
-  );
-  if (cityIndex !== -1) return [street, ...parts.slice(cityIndex)].join(", ");
-  return `${street}, ${CITY_SUFFIX}`;
+function normalizeAddress(address: string): string {
+  const cleaned = address
+    .replace(/,?\s*bah[ií]a\s+blanca.*$/i, "")
+    .trim();
+  return `${cleaned || address.trim()}, ${CITY_SUFFIX}`;
 }
 
 function sanitizeForLog(value: string): string {
@@ -102,7 +99,7 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? process.env.PLACES_API_KEY;
   if (!apiKey) {
     const result: DeliveryResult = { deliverable: true, fee: 0, distance_km: null, free: true, reason: "config" };
     return NextResponse.json(result);
@@ -112,20 +109,35 @@ export async function GET(req: Request) {
   let resolvedLng = hasCoords ? lng : NaN;
 
   if (!hasCoords && hasAddress) {
+    const normalizedAddress = normalizeAddress(rawAddress!);
     const geocodeUrl = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-    geocodeUrl.searchParams.set("address", `${rawAddress!.trim()}, ${CITY_SUFFIX}`);
+    geocodeUrl.searchParams.set("address", normalizedAddress);
+    geocodeUrl.searchParams.set(
+      "components",
+      "locality:Bahía Blanca|administrative_area:Buenos Aires|country:AR"
+    );
+    geocodeUrl.searchParams.set("region", "ar");
+    geocodeUrl.searchParams.set("language", "es");
     geocodeUrl.searchParams.set("key", apiKey);
+
     try {
       const geoRes = await fetch(geocodeUrl.toString());
       const geoData = await geoRes.json();
-      if (geoData.status === "OK" && geoData.results?.[0]?.geometry?.location) {
-        resolvedLat = geoData.results[0].geometry.location.lat;
-        resolvedLng = geoData.results[0].geometry.location.lng;
+      const firstResult = geoData.results?.[0];
+
+      const validTypes = ["street_address", "premise", "subpremise", "route", "intersection"];
+      const isSpecificAddress = firstResult?.types?.some((t: string) => validTypes.includes(t));
+
+      if (geoData.status === "OK" && firstResult?.geometry?.location && isSpecificAddress) {
+        resolvedLat = firstResult.geometry.location.lat;
+        resolvedLng = firstResult.geometry.location.lng;
       } else {
         console.warn(
-          "[delivery-cost] Geocode falló con status:", geoData.status,
-          "| Mensaje de Google:", geoData.error_message || "Sin mensaje detallado",
-          "| Dirección:", sanitizeForLog(rawAddress!.trim())
+          "[delivery-cost] Geocode sin dirección específica:",
+          geoData.status,
+          "| types:", firstResult?.types,
+          "| msg:", geoData.error_message || "N/A",
+          "| dir:", sanitizeForLog(rawAddress!.trim())
         );
       }
     } catch (err) {
@@ -147,7 +159,7 @@ export async function GET(req: Request) {
   }
 
   if (!element && hasAddress) {
-    const destination = buildDestinationFromAddress(rawAddress!.trim());
+    const destination = normalizeAddress(rawAddress!);
     element = await callDistanceMatrix(ORIGIN_ADDRESS, destination, apiKey);
     if (element?.status === "OK" && element.distance) {
       mode = "address";

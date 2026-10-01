@@ -60,21 +60,23 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     || delivery.status === "free";
 
   const calculateDelivery = useCallback((address: string, subtotal: number, coords?: { lat: number; lng: number }) => {
-    if (!address.trim()) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (address.trim().length < 5) {
       setDelivery({ status: "idle" });
       return;
     }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    setDelivery({ status: "loading" });
+
     debounceRef.current = setTimeout(async () => {
-      setDelivery({ status: "loading" });
       try {
-        // Usar coordenadas si están disponibles (más preciso)
-        const params = new URLSearchParams({ subtotal: String(subtotal), address });
+        const params = new URLSearchParams({ subtotal: String(subtotal), address: address.trim() });
         if (coords) {
           params.set("lat", String(coords.lat));
           params.set("lng", String(coords.lng));
         }
-        const res = await fetch(`/api/delivery-cost?${params.toString()}`);
+        const res = await fetch(`/api/delivery-cost?${params.toString()}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) {
           setDelivery({ status: "error", message: data.error ?? "No se pudo calcular el envío" });
@@ -88,30 +90,28 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
       } catch {
         setDelivery({ status: "error", message: "Error al calcular el envío" });
       }
-    }, 800);
+    }, 600);
   }, []);
 
-  const [addressConfirmed, setAddressConfirmed] = useState(false);
-
   useEffect(() => {
-    if (!isDelivery) { setDelivery({ status: "idle" }); return; }
-    if (!addressConfirmed) return;
-    calculateDelivery(form.address, totalPrice, undefined);
-  }, [form.address, totalPrice, isDelivery, addressConfirmed, calculateDelivery]);
+    if (!isDelivery) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setDelivery({ status: "idle" });
+      return;
+    }
+    calculateDelivery(form.address, totalPrice, coordsRef.current ?? undefined);
+  }, [form.address, totalPrice, isDelivery, calculateDelivery]);
 
   function handleField(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (name === "address") {
-      setAddressConfirmed(false);
-      setDelivery({ status: "idle" });
       coordsRef.current = null;
     }
   }
 
   function handleDeliveryType(type: "DELIVERY" | "TAKEAWAY") {
     setDelivery({ status: "idle" });
-    setAddressConfirmed(false);
     coordsRef.current = null;
     setForm((prev) => ({
       ...prev,
@@ -133,8 +133,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
     }
     if (isDelivery && delivery.status === "idle") {
       if (form.address.trim().length >= 5) {
-        // Calcular y esperar
-        setAddressConfirmed(true);
         calculateDelivery(form.address, totalPrice, undefined);
         setError("Calculando el costo de envío, intentá de nuevo en un momento.");
       } else {
@@ -314,11 +312,6 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
                       placeholder="Av. Alem 1234"
                       value={form.address}
                       onChange={handleField}
-                      onBlur={() => {
-                        if (isDelivery && form.address.trim().length >= 5) {
-                          setAddressConfirmed(true);
-                        }
-                      }}
                       className={inputCls}
                     />
                 </Field>
