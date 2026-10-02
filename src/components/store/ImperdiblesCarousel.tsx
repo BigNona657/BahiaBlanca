@@ -12,7 +12,7 @@ type Props = {
 export default function ImperdiblesCarousel({ items, onOpen }: Props) {
   const stocks = items.map((item) => item.stock);
 
-  function toProduct(item: ImperdibleItem): Product {
+  function toProduct(item: ImperdibleItem, idx: number): Product {
     return {
       id: -(Math.abs(item.title.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) + 1000),
       category_id: 0,
@@ -20,8 +20,8 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
       slug: item.title.toLowerCase().replace(/\s+/g, "-"),
       description: item.description,
       price: String(item.price),
-      image_url: null,
-      image_data: item.image_data || null,
+      image_url: `/api/image/setting/imperdibles_idx_${idx}`,
+      image_data: null,
       available: true,
       sort_order: 0,
       stock: item.stock,
@@ -33,7 +33,7 @@ export default function ImperdiblesCarousel({ items, onOpen }: Props) {
   function handleOpen(item: ImperdibleItem, i: number) {
     const stock = stocks[i];
     if (stock !== undefined && stock <= 0) return;
-    onOpen(toProduct(item));
+    onOpen(toProduct(item, i));
   }
 
   return (
