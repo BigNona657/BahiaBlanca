@@ -63,6 +63,19 @@ export default async function AdminDashboard() {
                   <p className="text-xs text-gray-400 mt-0.5">
                     {PAYMENT_LABEL[order.payment_method]}
                   </p>
+                  {order.items.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {order.items.map((item, i) => (
+                        <li key={i} className="text-xs text-gray-600">
+                          <span className="font-medium">{item.quantity}×</span> {item.product_name}
+                          {item.note && <span className="text-brand-500 ml-1">({item.note})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {order.items.length === 0 && order.notes && (
+                    <p className="mt-1.5 text-xs text-gray-600">{order.notes}</p>
+                  )}
                 </div>
 
                 {/* Total + selector estado */}

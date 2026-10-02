@@ -23,6 +23,7 @@ export type AdminOrder = {
   delivery_address: string;
   phone: string | null;
   total: string;
+  notes: string | null;
   created_at: string;
   customer_name: string | null;
   customer_email: string | null;
@@ -49,7 +50,7 @@ export async function getAdminOrders(activeOnly = false): Promise<AdminOrder[]> 
     ? await sql`
         SELECT
           o.id, o.status, o.payment_method, o.delivery_address,
-          o.phone, o.total, o.created_at,
+          o.phone, o.total, o.notes, o.created_at,
           u.name  AS customer_name,
           u.email AS customer_email
         FROM orders o
@@ -60,7 +61,7 @@ export async function getAdminOrders(activeOnly = false): Promise<AdminOrder[]> 
     : await sql`
         SELECT
           o.id, o.status, o.payment_method, o.delivery_address,
-          o.phone, o.total, o.created_at,
+          o.phone, o.total, o.notes, o.created_at,
           u.name  AS customer_name,
           u.email AS customer_email
         FROM orders o
