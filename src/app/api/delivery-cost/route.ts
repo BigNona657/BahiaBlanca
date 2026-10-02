@@ -47,7 +47,7 @@ async function callRoutesAPI(
         "X-Goog-FieldMask": "routes.distanceMeters",
       },
       body: JSON.stringify({
-        origin: { location: { latLng: { latitude: -38.7183, longitude: -62.2663 } } },
+        origin: { location: { latLng: { latitude: -38.738037, longitude: -62.257481 } } },
         destination: { address: destination },
         travelMode: "DRIVE",
         routingPreference: "TRAFFIC_UNAWARE",
@@ -164,7 +164,7 @@ export async function GET(req: Request) {
 
   if (!isNaN(resolvedLat) && !isNaN(resolvedLng)) {
     // Haversine con factor 1.3 para estimar ruta real desde distancia en línea recta
-    const straightKm = haversineKm(-38.7183, -62.2663, resolvedLat, resolvedLng);
+    const straightKm = haversineKm(-38.738037, -62.257481, resolvedLat, resolvedLng);
     const estimatedMeters = Math.round(straightKm * 1.3 * 1000);
     console.log("[delivery-cost] Haversine:", straightKm.toFixed(3), "km → estimado:", estimatedMeters, "m");
     routeResult = { distanceMeters: estimatedMeters };
