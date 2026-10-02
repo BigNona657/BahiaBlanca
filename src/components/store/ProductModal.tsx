@@ -210,16 +210,24 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
         {/* ── Imagen ── */}
         <div className="relative w-full shrink-0" style={{ height: "50dvh" }}>
           {hasImage ? (
-            <Image
-              src={imageSrc}
-              alt={product.name}
-              fill
-              sizes="(max-width: 640px) 100vw, 448px"
-              className="object-cover"
-              priority
-              unoptimized={imageSrc.startsWith("/api/image")}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
+            imageSrc.startsWith("data:") ? (
+              <img
+                src={imageSrc}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={imageSrc}
+                alt={product.name}
+                fill
+                sizes="(max-width: 640px) 100vw, 448px"
+                className="object-cover"
+                priority
+                unoptimized={imageSrc.startsWith("/api/image")}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            )
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center text-7xl">
               🍽️
