@@ -20,6 +20,16 @@ function sanitizeForLog(value: string): string {
   return value.replace(/[\r\n\t\0]/g, " ").replace(/[^\x20-\x7E\u00C0-\u024F]/g, "?").slice(0, 150);
 }
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function callRoutesAPI(
   destination: string,
   apiKey: string
@@ -153,34 +163,12 @@ export async function GET(req: Request) {
   let mode = "address";
 
   if (!isNaN(resolvedLat) && !isNaN(resolvedLng)) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
-    try {
-      console.log("[delivery-cost] Routes API (coords):", resolvedLat, resolvedLng);
-      const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "routes.distanceMeters",
-        },
-        body: JSON.stringify({
-          origin: { location: { latLng: { latitude: -38.7183, longitude: -62.2663 } } },
-          destination: { location: { latLng: { latitude: resolvedLat, longitude: resolvedLng } } },
-          travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_UNAWARE",
-        }),
-      });
-      clearTimeout(timeout);
-      const data = await res.json();
-      console.log("[delivery-cost] Routes (coords) response:", JSON.stringify(data).slice(0, 200));
-      const dm = data?.routes?.[0]?.distanceMeters;
-      if (typeof dm === "number") { routeResult = { distanceMeters: dm }; mode = hasCoords ? "coords" : "geocoded"; }
-    } catch (err) {
-      clearTimeout(timeout);
-      console.warn("[delivery-cost] Routes (coords) FAILED:", String(err));
-    }
+    // Haversine con factor 1.3 para estimar ruta real desde distancia en línea recta
+    const straightKm = haversineKm(-38.7183, -62.2663, resolvedLat, resolvedLng);
+    const estimatedMeters = Math.round(straightKm * 1.4 * 1000);
+    console.log("[delivery-cost] Haversine:", straightKm.toFixed(3), "km → estimado:", estimatedMeters, "m");
+    routeResult = { distanceMeters: estimatedMeters };
+    mode = hasCoords ? "coords" : "geocoded";
   }
 
   if (!routeResult && hasAddress) {
