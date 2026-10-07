@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import CartItemRow from "@/components/store/CartItemRow";
 import { createOrder, type CheckoutFormData } from "@/lib/actions/orders";
 import type { TartaFlavor, EmpanadasFlavor } from "@/lib/actions/settings";
+import { isStoreOpen, STORE_HOURS } from "@/lib/storeHours";
 
 const ALIAS = "big-nona";
 const TAKEAWAY_ADDRESS = "Fatone 657";
@@ -41,6 +42,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [error, setError] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(true);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coordsRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -48,7 +50,7 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   const [showPredictions, setShowPredictions] = useState(false);
   const placesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); setStoreOpen(isStoreOpen()); }, []);
 
   const isDelivery = form.deliveryType === "DELIVERY";
 
@@ -161,6 +163,10 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!storeOpen) {
+      setError("El local está cerrado en este momento.");
+      return;
+    }
     if (isDelivery && delivery.status === "loading") {
       setError("Esperá a que se calcule el costo de envío.");
       return;
@@ -279,6 +285,15 @@ export default function CartClient({ tartaFlavors, empanadasFlavors }: { tartaFl
         {/* Columna derecha: formulario checkout */}
         <div className="lg:w-96">
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+
+            {!storeOpen && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-4 text-center">
+                <p className="text-2xl mb-1">🔒</p>
+                <p className="text-sm font-bold text-red-700">El local está cerrado</p>
+                <p className="text-xs text-red-500 mt-1">Podrás hacer tu pedido durante el horario de atención:</p>
+                <p className="text-xs font-semibold text-red-700 mt-1">{STORE_HOURS}</p>
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-medium text-gray-500 mb-2">Tipo de entrega *</p>
