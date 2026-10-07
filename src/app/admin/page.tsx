@@ -1,15 +1,29 @@
 import { getAdminOrders, getAdminStats } from "@/lib/actions/admin";
 import OrderStatusSelect from "@/components/admin/OrderStatusSelect";
+import NewOrderNotifier from "@/components/admin/NewOrderNotifier";
+import { sql } from "@/lib/db/client";
 
 export const revalidate = 0; // siempre fresco en el panel admin
 
 const PAYMENT_LABEL = { CASH: "💵 Efectivo", TRANSFER: "🏦 Transferencia" };
 
 export default async function AdminDashboard() {
-  const [orders, stats] = await Promise.all([getAdminOrders(true), getAdminStats()]);
+  const [orders, stats, chatRows] = await Promise.all([
+    getAdminOrders(true),
+    getAdminStats(),
+    sql`
+      SELECT COALESCE(MAX(m.id), 0) AS last_id
+      FROM order_messages m
+      INNER JOIN orders o ON o.id = m.order_id
+      WHERE m.sender = 'client'
+        AND o.status NOT IN ('DELIVERED', 'CANCELLED')
+    `,
+  ]);
+  const initialLastChatId = Number(chatRows[0].last_id);
 
   return (
     <div className="space-y-6">
+      <NewOrderNotifier initialCount={orders.length} initialLastChatId={initialLastChatId} />
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <StatCard label="Pedidos hoy"      value={String(stats.ordersToday)} />

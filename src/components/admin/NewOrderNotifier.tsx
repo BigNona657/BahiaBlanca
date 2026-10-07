@@ -17,15 +17,17 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
     try {
       const ctx = new AudioContext();
       [0, 0.35, 0.7].forEach((t) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.25);
-        osc.start(ctx.currentTime + t);
-        osc.stop(ctx.currentTime + t + 0.25);
+        [880, 1100].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(1.0, ctx.currentTime + t);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.3);
+          osc.start(ctx.currentTime + t);
+          osc.stop(ctx.currentTime + t + 0.3);
+        });
       });
     } catch {}
   }
@@ -72,7 +74,7 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
           }
         }
       } catch {}
-    }, 15000);
+    }, 45000);
 
     return () => clearInterval(interval);
   }, [setUnreadMessages]);
