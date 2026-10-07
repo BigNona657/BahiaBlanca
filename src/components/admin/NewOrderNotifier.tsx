@@ -9,9 +9,12 @@ type Props = {
 };
 
 export default function NewOrderNotifier({ initialCount, initialLastChatId }: Props) {
-  const knownCount = useRef(initialCount);
+  const knownCount = useRef<number | null>(null);
   const knownLastChatId = useRef(initialLastChatId);
   const { setUnreadMessages } = useUnread();
+  const initialized = useRef(false);
+
+  void initialCount; // prop mantenido por compatibilidad
 
   function playOrderBeep() {
     try {
@@ -59,7 +62,10 @@ export default function NewOrderNotifier({ initialCount, initialLastChatId }: Pr
 
         if (ordersRes.ok) {
           const { count } = await ordersRes.json();
-          if (count > knownCount.current) {
+          if (knownCount.current === null) {
+            // Primer poll: establecer baseline sin sonar
+            knownCount.current = count;
+          } else if (count > knownCount.current) {
             playOrderBeep();
             knownCount.current = count;
           }
