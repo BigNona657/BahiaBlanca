@@ -87,8 +87,8 @@ export default async function AdminDashboard() {
                       ))}
                     </ul>
                   )}
-                  {order.items.length === 0 && order.notes && (
-                    <p className="mt-1.5 text-xs text-gray-600">{order.notes}</p>
+                  {order.notes && (
+                    <p className="mt-1.5 text-xs text-gray-600">📋 {order.notes}</p>
                   )}
                 </div>
 

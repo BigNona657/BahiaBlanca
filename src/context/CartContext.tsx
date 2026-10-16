@@ -117,8 +117,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const items: CartItem[] = JSON.parse(stored);
-        if (Array.isArray(items) && items.length > 0) {
-          dispatch({ type: "HYDRATE", items });
+        // Filtrar ítems especiales (menú del día, imperdibles) — no persisten entre días
+        const filtered = items.filter((i) => i.product.id > 0);
+        if (Array.isArray(filtered) && filtered.length > 0) {
+          dispatch({ type: "HYDRATE", items: filtered });
         }
       }
     } catch {
