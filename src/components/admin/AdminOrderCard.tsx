@@ -59,6 +59,9 @@ export default function AdminOrderCard({
               ))}
             </ul>
           )}
+          {order.notes && (
+            <p className="mt-1.5 text-xs text-gray-600">📋 {order.notes}</p>
+          )}
         </div>
 
         <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 shrink-0">
