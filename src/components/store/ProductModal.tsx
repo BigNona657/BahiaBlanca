@@ -347,7 +347,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
           {selectionDone && (
             <div className="px-5 py-4 mt-auto border-t border-gray-100 bg-white">
               <div className="flex items-center justify-between gap-4">
-                {!isEmpanada && !isPizza && !isTarta && !isPasta && !isMilanesa && (
+                {!isEmpanada && !isPizza && !isTarta && !isMilanesa && (
                   <div className="flex items-center gap-3 bg-gray-100 rounded-2xl px-2 py-1">
                     <button
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
