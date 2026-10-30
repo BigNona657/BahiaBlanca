@@ -331,7 +331,7 @@ export default function ProductModal({ product, onClose, onAdd, isAuthenticated,
 
           {/* ── Selector de pastas ── */}
           {isPasta && !pastaNote && (
-            <PastaSelector price={parseFloat(product.price)} onConfirm={handlePastaConfirm} />
+            <PastaSelector price={parseFloat(product.price)} productName={product.name} onConfirm={handlePastaConfirm} />
           )}
           {isPasta && pastaNote && (
             <div className="mx-5 mt-3 bg-brand-50 border border-brand-200 rounded-2xl px-4 py-3 flex items-start justify-between gap-3">
